@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/src-d/protogo/report"
 )
@@ -153,15 +154,38 @@ func New(paths ...string) (*Scanner, error) {
 // Scan retrieves the scanned packages containing the extracted
 // go types and structs.
 func (s *Scanner) Scan() ([]*Package, error) {
-	var pkgs []*Package
-	for _, p := range s.paths {
-		pkg, err := s.scanPackage(p)
-		if err != nil {
-			return nil, fmt.Errorf("error scanning package %q: %s", p, err)
-		}
+	var (
+		pkgs   = make([]*Package, len(s.paths))
+		errors []error
+		mut    sync.Mutex
+		wg     = new(sync.WaitGroup)
+	)
 
-		pkgs = append(pkgs, pkg)
+	wg.Add(len(s.paths))
+	for i, p := range s.paths {
+		go func(p string, i int) {
+			defer wg.Done()
+
+			pkg, err := s.scanPackage(p)
+			mut.Lock()
+			defer mut.Unlock()
+			if err != nil {
+				errors = append(errors, fmt.Errorf("error scanning package %q: %s", p, err))
+			} else {
+				pkgs[i] = pkg
+			}
+		}(p, i)
 	}
+
+	wg.Wait()
+	if len(errors) > 0 {
+		var lines []string
+		for _, err := range errors {
+			lines = append(lines, err.Error())
+		}
+		return nil, fmt.Errorf(strings.Join(lines, "\n"))
+	}
+
 	return pkgs, nil
 }
 
@@ -200,8 +224,7 @@ func (p *Package) processObject(o types.Object) {
 		return
 	}
 
-	name := fmt.Sprintf("%s.%s", n.Obj().Pkg().Path(), n.Obj().Name())
-	p.Aliases[name] = processType(n.Underlying())
+	p.Aliases[objName(n.Obj())] = processType(n.Underlying())
 }
 
 func processType(typ types.Type) (t Type) {
@@ -234,7 +257,7 @@ func processType(typ types.Type) (t Type) {
 }
 
 func (p *Package) processEnumValue(name string, named *types.Named) {
-	typ := fmt.Sprintf("%s.%s", named.Obj().Pkg().Path(), named.Obj().Name())
+	typ := objName(named.Obj())
 	p.values[typ] = append(p.values[typ], name)
 }
 
@@ -247,6 +270,11 @@ func processStruct(s *Struct, elem *types.Struct) *Struct {
 			continue
 		}
 
+		// TODO: It has not been decided yet what exact behaviour
+		// is the intended when a struct overrides a field from
+		// a previously embedded type. For now, the field is just
+		// completely ignored and a warning is printed to give
+		// feedback to the user.
 		if s.HasField(v.Name()) {
 			report.Warn("struct %q already has a field %q", s.Name, v.Name())
 			continue
@@ -371,4 +399,8 @@ func parseSourceFiles(root string, paths []string) (*types.Package, error) {
 	config := types.Config{Importer: importer.For("gc", nil)}
 
 	return config.Check(root, fs, files, new(types.Info))
+}
+
+func objName(obj types.Object) string {
+	return fmt.Sprintf("%s.%s", obj.Pkg().Path(), obj.Name())
 }
