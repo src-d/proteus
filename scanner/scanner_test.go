@@ -298,13 +298,15 @@ func TestScanner(t *testing.T) {
 	require.Equal(1, len(subpkg.Structs), "subpkg")
 	assertStruct(t, subpkg.Structs[0], "Point", "X", "Y")
 
-	baz := pkg.Aliases[fmt.Sprintf("%s.%s", projectPath("fixtures/scanner"), "Baz")]
-	enum, ok := baz.(*Enum)
-	require.True(ok, "Baz should be enum")
+	_, ok := pkg.Aliases[fmt.Sprintf("%s.%s", projectPath("fixtures/scanner"), "Baz")]
+	require.False(ok, "Baz should not be an alias anymore")
+
+	require.Equal(1, len(pkg.Enums), "pkg enums")
+	require.Equal("Baz", pkg.Enums[0].Name)
 
 	require.Equal(
 		[]string{"ABaz", "BBaz", "CBaz", "DBaz"},
-		enum.Values,
+		pkg.Enums[0].Values,
 		"enum values",
 	)
 }

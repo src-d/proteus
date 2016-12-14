@@ -10,6 +10,7 @@ import (
 	"go/types"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/src-d/protogo/report"
 )
@@ -22,6 +23,7 @@ type Package struct {
 	Path     string
 	Name     string
 	Structs  []*Struct
+	Enums    []*Enum
 	Aliases  map[string]Type
 	values   map[string][]string
 }
@@ -101,15 +103,8 @@ func NewMap(key, val Type) Type {
 
 // Enum consists of a list of possible values.
 type Enum struct {
-	*BaseType
+	Name   string
 	Values []string
-}
-
-func NewEnum(values ...string) Type {
-	return &Enum{
-		newBaseType(),
-		values,
-	}
 }
 
 // Struct represents a Go struct with its name and fields.
@@ -294,10 +289,18 @@ func findStruct(t types.Type) *types.Struct {
 	}
 }
 
-func (p *Package) checkEnums() {
+func (p *Package) collectEnums() {
 	for k := range p.Aliases {
 		if vals, ok := p.values[k]; ok {
-			p.Aliases[k] = NewEnum(vals...)
+			idx := strings.LastIndex(k, ".")
+			name := k[idx+1:]
+
+			p.Enums = append(p.Enums, &Enum{
+				Name:   name,
+				Values: vals,
+			})
+
+			delete(p.Aliases, k)
 		}
 	}
 }
@@ -320,7 +323,7 @@ func buildPackage(gopkg *types.Package) (*Package, error) {
 		pkg.processObject(o)
 	}
 
-	pkg.checkEnums()
+	pkg.collectEnums()
 	return pkg, nil
 }
 
