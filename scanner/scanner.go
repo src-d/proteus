@@ -10,6 +10,8 @@ import (
 	"go/types"
 	"os"
 	"path/filepath"
+
+	"github.com/src-d/protogo/report"
 )
 
 // Package holds information about a single Go package and
@@ -24,8 +26,10 @@ type Package struct {
 	values   map[string][]string
 }
 
-// Type is the common interface for all possible protobuf types supported in protogo
-// which are Map, Enum, Named and Basic.
+// Type is the common interface for all possible types supported in protogo.
+// Type is neither a representation of a Go type nor a representation of a
+// protobuf type. Is an intermediate representation to ease future steps in
+// the conversion from Go to protobuf.
 // All types can be nullable (or not) or repeated (or not).
 type Type interface {
 	SetRepeated(bool)
@@ -80,10 +84,7 @@ func NewNamed(path, name string) Type {
 	}
 }
 
-func (n *Named) FullName() string {
-	return fmt.Sprintf("%s.%s", n.Path, n.Name)
-}
-
+// Map is a map type with a key and a value type.
 type Map struct {
 	*BaseType
 	Key   Type
@@ -115,6 +116,15 @@ func NewEnum(values ...string) Type {
 type Struct struct {
 	Name   string
 	Fields []*Field
+}
+
+func (s *Struct) HasField(name string) bool {
+	for _, f := range s.Fields {
+		if f.Name == name {
+			return true
+		}
+	}
+	return false
 }
 
 // Field contains name and type of a struct field.
@@ -221,7 +231,7 @@ func processType(typ types.Type) (t Type) {
 		val := processType(u.Elem())
 		t = NewMap(key, val)
 	default:
-		fmt.Printf("ignoring type %s\n", typ.String())
+		report.Warn("ignoring type %s", typ.String())
 		return nil
 	}
 
@@ -237,13 +247,21 @@ func processStruct(s *Struct, elem *types.Struct) *Struct {
 	for i := 0; i < elem.NumFields(); i++ {
 		v := elem.Field(i)
 		tags := findProtoTags(elem.Tag(i))
+
 		if isIgnoredField(v, tags) {
+			continue
+		}
+
+		if s.HasField(v.Name()) {
+			report.Warn("struct %q already has a field %q", s.Name, v.Name())
 			continue
 		}
 
 		if v.Anonymous() {
 			embedded := findStruct(v.Type())
-			if embedded != nil {
+			if embedded == nil {
+				report.Warn("field %q with type %q is not a valid embedded type", v.Name(), v.Type())
+			} else {
 				s = processStruct(s, embedded)
 			}
 			continue

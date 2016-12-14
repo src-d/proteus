@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"fmt"
 	"go/token"
 	"go/types"
 	"os"
@@ -103,6 +104,231 @@ func TestProcessType(t *testing.T) {
 	for _, c := range cases {
 		require.Equal(t, c.expected, processType(c.typ), c.name)
 	}
+}
+
+func TestProcessStruct(t *testing.T) {
+	cases := []struct {
+		name     string
+		elem     *types.Struct
+		expected *Struct
+	}{
+		{
+			"simple struct",
+			types.NewStruct(
+				[]*types.Var{
+					mkField("Foo", types.Typ[types.Int], false),
+					mkField("Bar", types.Typ[types.String], false),
+				},
+				nil,
+			),
+			&Struct{
+				Fields: []*Field{
+					{"Foo", NewBasic("int")},
+					{"Bar", NewBasic("string")},
+				},
+			},
+		},
+		{
+			"struct with non exported field",
+			types.NewStruct(
+				[]*types.Var{
+					mkField("Foo", types.Typ[types.Int], false),
+					mkField("bar", types.Typ[types.String], false),
+				},
+				nil,
+			),
+			&Struct{
+				Fields: []*Field{
+					{"Foo", NewBasic("int")},
+				},
+			},
+		},
+		{
+			"struct with ignore tag",
+			types.NewStruct(
+				[]*types.Var{
+					mkField("Foo", types.Typ[types.Int], false),
+					mkField("Bar", types.Typ[types.String], false),
+				},
+				[]string{"", `proto:"-"`},
+			),
+			&Struct{
+				Fields: []*Field{
+					{"Foo", NewBasic("int")},
+				},
+			},
+		},
+		{
+			"struct with unsupported type",
+			types.NewStruct(
+				[]*types.Var{
+					mkField("Foo", types.Typ[types.Int], false),
+					mkField("Bar", types.NewStruct(nil, nil), false),
+				},
+				nil,
+			),
+			&Struct{
+				Fields: []*Field{
+					{"Foo", NewBasic("int")},
+				},
+			},
+		},
+		{
+			"embedded struct",
+			types.NewStruct(
+				[]*types.Var{
+					mkField("Foo",
+						newNamed("/foo", "Foo", types.NewStruct(
+							[]*types.Var{
+								mkField("Foo", types.Typ[types.Int], false),
+								mkField("Bar", types.Typ[types.String], false),
+							},
+							nil,
+						),
+						),
+						true,
+					),
+					mkField("Baz", types.Typ[types.Uint64], false),
+				},
+				nil,
+			),
+			&Struct{
+				Fields: []*Field{
+					{"Foo", NewBasic("int")},
+					{"Bar", NewBasic("string")},
+					{"Baz", NewBasic("uint64")},
+				},
+			},
+		},
+		{
+			"embedded struct with repeated field",
+			types.NewStruct(
+				[]*types.Var{
+					mkField("Foo",
+						newNamed("/foo", "Foo", types.NewStruct(
+							[]*types.Var{
+								mkField("Foo", types.Typ[types.Int], false),
+								mkField("Bar", types.Typ[types.String], false),
+							},
+							nil,
+						),
+						),
+						true,
+					),
+					mkField("Bar", types.Typ[types.Uint64], false),
+				},
+				nil,
+			),
+			&Struct{
+				Fields: []*Field{
+					{"Foo", NewBasic("int")},
+					{"Bar", NewBasic("string")},
+				},
+			},
+		},
+		{
+			"embedded pointer to struct",
+			types.NewStruct(
+				[]*types.Var{
+					mkField("Foo",
+						types.NewPointer(
+							newNamed("/foo", "Foo", types.NewStruct(
+								[]*types.Var{
+									mkField("Foo", types.Typ[types.Int], false),
+									mkField("Bar", types.Typ[types.String], false),
+								},
+								nil,
+							),
+							),
+						),
+						true,
+					),
+					mkField("Baz", types.Typ[types.Uint64], false),
+				},
+				nil,
+			),
+			&Struct{
+				Fields: []*Field{
+					{"Foo", NewBasic("int")},
+					{"Bar", NewBasic("string")},
+					{"Baz", NewBasic("uint64")},
+				},
+			},
+		},
+		{
+			"invalid embedded type",
+			types.NewStruct(
+				[]*types.Var{
+					mkField("Foo", types.Typ[types.Int], true),
+					mkField("Baz", types.Typ[types.Uint64], false),
+				},
+				nil,
+			),
+			&Struct{
+				Fields: []*Field{
+					{"Baz", NewBasic("uint64")},
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		require.Equal(t, c.expected, processStruct(&Struct{}, c.elem), c.name)
+	}
+}
+
+func TestScanner(t *testing.T) {
+	require := require.New(t)
+
+	scanner, err := New(projectPath("fixtures/scanner"), projectPath("fixtures/scanner/subpkg"))
+	require.Nil(err)
+
+	pkgs, err := scanner.Scan()
+	require.Nil(err)
+	require.Equal(2, len(pkgs), "scan packages")
+
+	pkg := pkgs[0]
+	subpkg := pkgs[1]
+
+	require.Equal(3, len(pkg.Structs), "pkg")
+	assertStruct(t, pkg.Structs[0], "Bar", "Bar", "Baz")
+	assertStruct(t, pkg.Structs[1], "Foo", "Bar", "Baz", "IntList", "IntArray", "Map")
+	assertStruct(t, pkg.Structs[2], "Qux", "A", "B")
+
+	require.Equal(1, len(subpkg.Structs), "subpkg")
+	assertStruct(t, subpkg.Structs[0], "Point", "X", "Y")
+
+	baz := pkg.Aliases[fmt.Sprintf("%s.%s", projectPath("fixtures/scanner"), "Baz")]
+	enum, ok := baz.(*Enum)
+	require.True(ok, "Baz should be enum")
+
+	require.Equal(
+		[]string{"ABaz", "BBaz", "CBaz", "DBaz"},
+		enum.Values,
+		"enum values",
+	)
+}
+
+func assertStruct(t *testing.T, s *Struct, name string, fields ...string) {
+	require.Equal(
+		t,
+		name,
+		s.Name,
+		"struct name",
+	)
+	for _, f := range fields {
+		require.True(t, s.HasField(f), "should have struct field %q", f)
+	}
+}
+
+func mkField(name string, typ types.Type, anon bool) *types.Var {
+	return types.NewField(
+		token.NoPos,
+		types.NewPackage("/foo", "mock"),
+		name,
+		typ,
+		anon,
+	)
 }
 
 func repeated(t Type) Type {
