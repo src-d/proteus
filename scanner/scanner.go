@@ -10,6 +10,10 @@ import (
 	"go/types"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
+
+	"github.com/src-d/protogo/report"
 )
 
 // Package holds information about a single Go package and
@@ -20,12 +24,15 @@ type Package struct {
 	Path     string
 	Name     string
 	Structs  []*Struct
+	Enums    []*Enum
 	Aliases  map[string]Type
 	values   map[string][]string
 }
 
-// Type is the common interface for all possible protobuf types supported in protogo
-// which are Map, Enum, Named and Basic.
+// Type is the common interface for all possible types supported in protogo.
+// Type is neither a representation of a Go type nor a representation of a
+// protobuf type. Is an intermediate representation to ease future steps in
+// the conversion from Go to protobuf.
 // All types can be nullable (or not) or repeated (or not).
 type Type interface {
 	SetRepeated(bool)
@@ -80,10 +87,7 @@ func NewNamed(path, name string) Type {
 	}
 }
 
-func (n *Named) FullName() string {
-	return fmt.Sprintf("%s.%s", n.Path, n.Name)
-}
-
+// Map is a map type with a key and a value type.
 type Map struct {
 	*BaseType
 	Key   Type
@@ -100,21 +104,23 @@ func NewMap(key, val Type) Type {
 
 // Enum consists of a list of possible values.
 type Enum struct {
-	*BaseType
+	Name   string
 	Values []string
-}
-
-func NewEnum(values ...string) Type {
-	return &Enum{
-		newBaseType(),
-		values,
-	}
 }
 
 // Struct represents a Go struct with its name and fields.
 type Struct struct {
 	Name   string
 	Fields []*Field
+}
+
+func (s *Struct) HasField(name string) bool {
+	for _, f := range s.Fields {
+		if f.Name == name {
+			return true
+		}
+	}
+	return false
 }
 
 // Field contains name and type of a struct field.
@@ -148,15 +154,38 @@ func New(paths ...string) (*Scanner, error) {
 // Scan retrieves the scanned packages containing the extracted
 // go types and structs.
 func (s *Scanner) Scan() ([]*Package, error) {
-	var pkgs []*Package
-	for _, p := range s.paths {
-		pkg, err := s.scanPackage(p)
-		if err != nil {
-			return nil, fmt.Errorf("error scanning package %q: %s", p, err)
-		}
+	var (
+		pkgs   = make([]*Package, len(s.paths))
+		errors []error
+		mut    sync.Mutex
+		wg     = new(sync.WaitGroup)
+	)
 
-		pkgs = append(pkgs, pkg)
+	wg.Add(len(s.paths))
+	for i, p := range s.paths {
+		go func(p string, i int) {
+			defer wg.Done()
+
+			pkg, err := s.scanPackage(p)
+			mut.Lock()
+			defer mut.Unlock()
+			if err != nil {
+				errors = append(errors, fmt.Errorf("error scanning package %q: %s", p, err))
+			} else {
+				pkgs[i] = pkg
+			}
+		}(p, i)
 	}
+
+	wg.Wait()
+	if len(errors) > 0 {
+		var lines []string
+		for _, err := range errors {
+			lines = append(lines, err.Error())
+		}
+		return nil, fmt.Errorf(strings.Join(lines, "\n"))
+	}
+
 	return pkgs, nil
 }
 
@@ -195,8 +224,7 @@ func (p *Package) processObject(o types.Object) {
 		return
 	}
 
-	name := fmt.Sprintf("%s.%s", n.Obj().Pkg().Path(), n.Obj().Name())
-	p.Aliases[name] = processType(n.Underlying())
+	p.Aliases[objName(n.Obj())] = processType(n.Underlying())
 }
 
 func processType(typ types.Type) (t Type) {
@@ -221,7 +249,7 @@ func processType(typ types.Type) (t Type) {
 		val := processType(u.Elem())
 		t = NewMap(key, val)
 	default:
-		fmt.Printf("ignoring type %s\n", typ.String())
+		report.Warn("ignoring type %s", typ.String())
 		return nil
 	}
 
@@ -229,7 +257,7 @@ func processType(typ types.Type) (t Type) {
 }
 
 func (p *Package) processEnumValue(name string, named *types.Named) {
-	typ := fmt.Sprintf("%s.%s", named.Obj().Pkg().Path(), named.Obj().Name())
+	typ := objName(named.Obj())
 	p.values[typ] = append(p.values[typ], name)
 }
 
@@ -237,13 +265,26 @@ func processStruct(s *Struct, elem *types.Struct) *Struct {
 	for i := 0; i < elem.NumFields(); i++ {
 		v := elem.Field(i)
 		tags := findProtoTags(elem.Tag(i))
+
 		if isIgnoredField(v, tags) {
+			continue
+		}
+
+		// TODO: It has not been decided yet what exact behaviour
+		// is the intended when a struct overrides a field from
+		// a previously embedded type. For now, the field is just
+		// completely ignored and a warning is printed to give
+		// feedback to the user.
+		if s.HasField(v.Name()) {
+			report.Warn("struct %q already has a field %q", s.Name, v.Name())
 			continue
 		}
 
 		if v.Anonymous() {
 			embedded := findStruct(v.Type())
-			if embedded != nil {
+			if embedded == nil {
+				report.Warn("field %q with type %q is not a valid embedded type", v.Name(), v.Type())
+			} else {
 				s = processStruct(s, embedded)
 			}
 			continue
@@ -276,10 +317,18 @@ func findStruct(t types.Type) *types.Struct {
 	}
 }
 
-func (p *Package) checkEnums() {
+func (p *Package) collectEnums() {
 	for k := range p.Aliases {
 		if vals, ok := p.values[k]; ok {
-			p.Aliases[k] = NewEnum(vals...)
+			idx := strings.LastIndex(k, ".")
+			name := k[idx+1:]
+
+			p.Enums = append(p.Enums, &Enum{
+				Name:   name,
+				Values: vals,
+			})
+
+			delete(p.Aliases, k)
 		}
 	}
 }
@@ -302,7 +351,7 @@ func buildPackage(gopkg *types.Package) (*Package, error) {
 		pkg.processObject(o)
 	}
 
-	pkg.checkEnums()
+	pkg.collectEnums()
 	return pkg, nil
 }
 
@@ -350,4 +399,8 @@ func parseSourceFiles(root string, paths []string) (*types.Package, error) {
 	config := types.Config{Importer: importer.For("gc", nil)}
 
 	return config.Check(root, fs, files, new(types.Info))
+}
+
+func objName(obj types.Object) string {
+	return fmt.Sprintf("%s.%s", obj.Pkg().Path(), obj.Name())
 }
