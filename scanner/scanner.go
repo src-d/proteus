@@ -190,16 +190,16 @@ func (p *Package) processObject(o types.Object) {
 
 	if s, ok := n.Underlying().(*types.Struct); ok {
 
-		st := p.processStruct(&Struct{Name: o.Name()}, s)
+		st := processStruct(&Struct{Name: o.Name()}, s)
 		p.Structs = append(p.Structs, st)
 		return
 	}
 
 	name := fmt.Sprintf("%s.%s", n.Obj().Pkg().Path(), n.Obj().Name())
-	p.Aliases[name] = p.processType(n.Underlying())
+	p.Aliases[name] = processType(n.Underlying())
 }
 
-func (p *Package) processType(typ types.Type) (t Type) {
+func processType(typ types.Type) (t Type) {
 	switch u := typ.(type) {
 	case *types.Named:
 		t = NewNamed(
@@ -209,16 +209,16 @@ func (p *Package) processType(typ types.Type) (t Type) {
 	case *types.Basic:
 		t = NewBasic(u.Name())
 	case *types.Slice:
-		t = p.processType(u.Elem())
+		t = processType(u.Elem())
 		t.SetRepeated(true)
 	case *types.Array:
-		t = p.processType(u.Elem())
+		t = processType(u.Elem())
 		t.SetRepeated(true)
 	case *types.Pointer:
-		t = p.processType(u.Elem())
+		t = processType(u.Elem())
 	case *types.Map:
-		key := p.processType(u.Key())
-		val := p.processType(u.Elem())
+		key := processType(u.Key())
+		val := processType(u.Elem())
 		t = NewMap(key, val)
 	default:
 		fmt.Printf("ignoring type %s\n", typ.String())
@@ -233,7 +233,7 @@ func (p *Package) processEnumValue(name string, named *types.Named) {
 	p.values[typ] = append(p.values[typ], name)
 }
 
-func (p *Package) processStruct(s *Struct, elem *types.Struct) *Struct {
+func processStruct(s *Struct, elem *types.Struct) *Struct {
 	for i := 0; i < elem.NumFields(); i++ {
 		v := elem.Field(i)
 		tags := findProtoTags(elem.Tag(i))
@@ -244,14 +244,14 @@ func (p *Package) processStruct(s *Struct, elem *types.Struct) *Struct {
 		if v.Anonymous() {
 			embedded := findStruct(v.Type())
 			if embedded != nil {
-				s = p.processStruct(s, embedded)
+				s = processStruct(s, embedded)
 			}
 			continue
 		}
 
 		f := &Field{
 			Name: v.Name(),
-			Type: p.processType(v.Type()),
+			Type: processType(v.Type()),
 		}
 		if f.Type == nil {
 			continue
