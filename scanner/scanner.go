@@ -79,6 +79,10 @@ type Named struct {
 	Name string
 }
 
+func (n Named) String() string {
+	return fmt.Sprintf("%s.%s", n.Path, n.Name)
+}
+
 func NewNamed(path, name string) Type {
 	return &Named{
 		newBaseType(),
