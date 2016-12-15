@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/src-d/protogo/report"
+	"github.com/src-d/proteus/report"
 )
 
 // Package holds information about a single Go package and

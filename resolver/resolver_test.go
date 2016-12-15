@@ -6,14 +6,14 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/src-d/protogo/scanner"
+	"github.com/src-d/proteus/scanner"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
 var gopath = os.Getenv("GOPATH")
 
-const project = "github.com/src-d/protogo"
+const project = "github.com/src-d/proteus"
 
 func TestPackagesEnums(t *testing.T) {
 	packages := Packages{
