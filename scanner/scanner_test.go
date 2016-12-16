@@ -16,11 +16,11 @@ var gopath = os.Getenv("GOPATH")
 const project = "github.com/src-d/protogo"
 
 func TestGetSourceFiles(t *testing.T) {
-	paths, err := getSourceFiles(projectPath("fixtures/scanner"))
+	paths, err := getSourceFiles(projectPath("fixtures"))
 	require.Nil(t, err)
 	expected := []string{
-		projectPath("fixtures/scanner/bar.go"),
-		projectPath("fixtures/scanner/foo.go"),
+		projectPath("fixtures/bar.go"),
+		projectPath("fixtures/foo.go"),
 	}
 
 	require.Equal(t, expected, paths)
@@ -32,11 +32,11 @@ func projectPath(pkg string) string {
 
 func TestParseSourceFiles(t *testing.T) {
 	paths := []string{
-		projectPath("fixtures/scanner/bar.go"),
-		projectPath("fixtures/scanner/foo.go"),
+		projectPath("fixtures/bar.go"),
+		projectPath("fixtures/foo.go"),
 	}
 
-	pkg, err := parseSourceFiles(projectPath("fixtures/scanner"), paths)
+	pkg, err := parseSourceFiles(projectPath("fixtures"), paths)
 	require.Nil(t, err)
 
 	require.Equal(t, "foo", pkg.Name())
@@ -280,7 +280,7 @@ func TestProcessStruct(t *testing.T) {
 func TestScanner(t *testing.T) {
 	require := require.New(t)
 
-	scanner, err := New(projectPath("fixtures/scanner"), projectPath("fixtures/scanner/subpkg"))
+	scanner, err := New(projectPath("fixtures"), projectPath("fixtures/subpkg"))
 	require.Nil(err)
 
 	pkgs, err := scanner.Scan()
@@ -292,13 +292,13 @@ func TestScanner(t *testing.T) {
 
 	require.Equal(3, len(pkg.Structs), "pkg")
 	assertStruct(t, pkg.Structs[0], "Bar", "Bar", "Baz")
-	assertStruct(t, pkg.Structs[1], "Foo", "Bar", "Baz", "IntList", "IntArray", "Map")
+	assertStruct(t, pkg.Structs[1], "Foo", "Bar", "Baz", "IntList", "IntArray", "Map", "Timestamp", "External", "Duration", "Aliased")
 	assertStruct(t, pkg.Structs[2], "Qux", "A", "B")
 
 	require.Equal(1, len(subpkg.Structs), "subpkg")
 	assertStruct(t, subpkg.Structs[0], "Point", "X", "Y")
 
-	_, ok := pkg.Aliases[fmt.Sprintf("%s.%s", projectPath("fixtures/scanner"), "Baz")]
+	_, ok := pkg.Aliases[fmt.Sprintf("%s.%s", projectPath("fixtures"), "Baz")]
 	require.False(ok, "Baz should not be an alias anymore")
 
 	require.Equal(1, len(pkg.Enums), "pkg enums")
@@ -318,6 +318,8 @@ func assertStruct(t *testing.T, s *Struct, name string, fields ...string) {
 		s.Name,
 		"struct name",
 	)
+
+	require.Equal(t, len(fields), len(s.Fields), "should have same struct fields")
 	for _, f := range fields {
 		require.True(t, s.HasField(f), "should have struct field %q", f)
 	}
