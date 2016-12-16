@@ -45,5 +45,5 @@ var defaultMappings = TypeMappings{
 		Package: "google.protobuf",
 		Import:  "google/protobuf/timestamp.proto",
 	},
-	"time.Duration": &ProtobufType{Name: "int64"},
+	"time.Duration": &ProtobufType{Name: "int64", Basic: true},
 }
