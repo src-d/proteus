@@ -13,7 +13,7 @@ import (
 
 var gopath = os.Getenv("GOPATH")
 
-const project = "github.com/src-d/protogo"
+const project = "github.com/src-d/proteus"
 
 func TestGetSourceFiles(t *testing.T) {
 	paths, err := getSourceFiles(projectPath("fixtures"))

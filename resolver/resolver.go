@@ -3,8 +3,8 @@ package resolver
 import (
 	"fmt"
 
-	"github.com/src-d/protogo/report"
-	"github.com/src-d/protogo/scanner"
+	"github.com/src-d/proteus/report"
+	"github.com/src-d/proteus/scanner"
 )
 
 // Resolver has the responsibility of checking the types of all the packages
