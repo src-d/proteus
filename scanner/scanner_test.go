@@ -280,7 +280,7 @@ func TestProcessStruct(t *testing.T) {
 func TestScanner(t *testing.T) {
 	require := require.New(t)
 
-	scanner, err := New(projectPath("fixtures"), projectPath("fixtures/subpkg"))
+	scanner, err := New(projectPkg("fixtures"), projectPkg("fixtures/subpkg"))
 	require.Nil(err)
 
 	pkgs, err := scanner.Scan()
@@ -290,10 +290,11 @@ func TestScanner(t *testing.T) {
 	pkg := pkgs[0]
 	subpkg := pkgs[1]
 
-	require.Equal(3, len(pkg.Structs), "pkg")
+	require.Equal(4, len(pkg.Structs), "pkg")
 	assertStruct(t, pkg.Structs[0], "Bar", "Bar", "Baz")
 	assertStruct(t, pkg.Structs[1], "Foo", "Bar", "Baz", "IntList", "IntArray", "Map", "Timestamp", "External", "Duration", "Aliased")
 	assertStruct(t, pkg.Structs[2], "Qux", "A", "B")
+	assertStruct(t, pkg.Structs[3], "Saz", "Point", "Foo")
 
 	require.Equal(1, len(subpkg.Structs), "subpkg")
 	assertStruct(t, subpkg.Structs[0], "Point", "X", "Y")
@@ -348,4 +349,8 @@ func newNamed(path, name string, underlying types.Type) types.Type {
 		underlying,
 	)
 	return types.NewNamed(obj, underlying, nil)
+}
+
+func projectPkg(pkg string) string {
+	return filepath.Join(project, pkg)
 }

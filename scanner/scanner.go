@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/build"
@@ -133,16 +134,26 @@ type Field struct {
 	Type Type
 }
 
-// Scanner scans paths looking for Go source files to parse
+// Scanner scans packages looking for Go source files to parse
 // and extract types and structs from.
 type Scanner struct {
-	paths []string
+	packages []string
 }
 
+var (
+	GoPath         = os.Getenv("GOPATH")
+	ErrNoGoPathSet = errors.New("GOPATH environment variable is not set")
+)
+
 // New creates a new Scanner that will look for types and structs
-// only in the given paths.
-func New(paths ...string) (*Scanner, error) {
-	for _, p := range paths {
+// only in the given packages.
+func New(packages ...string) (*Scanner, error) {
+	if GoPath == "" {
+		return nil, ErrNoGoPathSet
+	}
+
+	for _, pkg := range packages {
+		p := filepath.Join(GoPath, "src", pkg)
 		fi, err := os.Stat(p)
 		switch {
 		case err != nil:
@@ -152,21 +163,21 @@ func New(paths ...string) (*Scanner, error) {
 		}
 	}
 
-	return &Scanner{paths: paths}, nil
+	return &Scanner{packages: packages}, nil
 }
 
 // Scan retrieves the scanned packages containing the extracted
 // go types and structs.
 func (s *Scanner) Scan() ([]*Package, error) {
 	var (
-		pkgs   = make([]*Package, len(s.paths))
+		pkgs   = make([]*Package, len(s.packages))
 		errors []error
 		mut    sync.Mutex
 		wg     = new(sync.WaitGroup)
 	)
 
-	wg.Add(len(s.paths))
-	for i, p := range s.paths {
+	wg.Add(len(s.packages))
+	for i, p := range s.packages {
 		go func(p string, i int) {
 			defer wg.Done()
 
@@ -178,7 +189,7 @@ func (s *Scanner) Scan() ([]*Package, error) {
 			} else {
 				pkgs[i] = pkg
 			}
-		}(p, i)
+		}(pkgPath(p), i)
 	}
 
 	wg.Wait()
@@ -235,7 +246,7 @@ func processType(typ types.Type) (t Type) {
 	switch u := typ.(type) {
 	case *types.Named:
 		t = NewNamed(
-			u.Obj().Pkg().Path(),
+			removeGoPath(u.Obj().Pkg().Path()),
 			u.Obj().Name(),
 		)
 	case *types.Basic:
@@ -345,7 +356,7 @@ func buildPackage(gopkg *types.Package) (*Package, error) {
 	objs := objectsInScope(gopkg.Scope())
 
 	pkg := &Package{
-		Path:    gopkg.Path(),
+		Path:    removeGoPath(gopkg.Path()),
 		Name:    gopkg.Name(),
 		values:  make(map[string][]string),
 		Aliases: make(map[string]Type),
@@ -400,11 +411,25 @@ func parseSourceFiles(root string, paths []string) (*types.Package, error) {
 		files = append(files, f)
 	}
 
-	config := types.Config{Importer: importer.For("gc", nil)}
+	config := types.Config{
+		FakeImportC: true,
+		Error: func(err error) {
+			report.Error(err.Error())
+		},
+		Importer: importer.Default(),
+	}
 
-	return config.Check(root, fs, files, new(types.Info))
+	return config.Check(root, fs, files, nil)
 }
 
 func objName(obj types.Object) string {
-	return fmt.Sprintf("%s.%s", obj.Pkg().Path(), obj.Name())
+	return fmt.Sprintf("%s.%s", removeGoPath(obj.Pkg().Path()), obj.Name())
+}
+
+func pkgPath(pkg string) string {
+	return filepath.Join(GoPath, "src", pkg)
+}
+
+func removeGoPath(path string) string {
+	return strings.Replace(path, filepath.Join(GoPath, "src")+"/", "", -1)
 }
