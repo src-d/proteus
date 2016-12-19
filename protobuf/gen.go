@@ -105,7 +105,6 @@ func writeEnum(buf *bytes.Buffer, enum *Enum) {
 
 func writeOptions(buf *bytes.Buffer, options Options) {
 	for _, opt := range options.Sorted() {
-		fmt.Println(opt)
 		buf.WriteString(fmt.Sprintf("\toption %s = %s;\n", opt.Name, opt.Value))
 	}
 }
