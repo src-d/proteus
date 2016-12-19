@@ -17,7 +17,7 @@ func main() {
 
 	app := cli.NewApp()
 	app.Description = "Generate .proto files from your Go packages."
-	app.Version = "0.1.0"
+	app.Version = "0.9.0"
 	app.Flags = []cli.Flag{
 		cli.StringSliceFlag{
 			Name:  "pkg, p",
