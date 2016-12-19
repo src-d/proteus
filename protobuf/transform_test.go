@@ -18,6 +18,8 @@ func TestToLowerSnakeCase(t *testing.T) {
 		{"fooBarBaz", "foo_bar_baz"},
 		{"FooBarBaz", "foo_bar_baz"},
 		{"foo1barBaz", "foo1bar_baz"},
+		{"fooBAR", "foo_bar"},
+		{"FBar", "fbar"},
 	}
 
 	for _, c := range cases {

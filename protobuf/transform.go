@@ -175,10 +175,12 @@ func toProtobufPkg(path string) string {
 
 func toLowerSnakeCase(s string) string {
 	var buf bytes.Buffer
+	var lastWasUpper bool
 	for i, r := range s {
-		if unicode.IsUpper(r) && i != 0 {
+		if unicode.IsUpper(r) && i != 0 && !lastWasUpper {
 			buf.WriteRune('_')
 		}
+		lastWasUpper = unicode.IsUpper(r)
 		buf.WriteRune(unicode.ToLower(r))
 	}
 	return buf.String()
