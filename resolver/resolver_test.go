@@ -1,7 +1,6 @@
 package resolver
 
 import (
-	"os"
 	"path/filepath"
 	"sort"
 	"testing"
@@ -10,8 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
-
-var gopath = os.Getenv("GOPATH")
 
 const project = "github.com/src-d/proteus"
 
@@ -150,5 +147,5 @@ func enum(name string, values ...string) *scanner.Enum {
 }
 
 func projectPath(pkg string) string {
-	return filepath.Join(gopath, "src", project, pkg)
+	return filepath.Join(project, pkg)
 }

@@ -1,5 +1,6 @@
-// +build ignore
 package foo
+
+import "github.com/src-d/proteus/fixtures/subpkg"
 
 type Bar struct {
 	Bar uint64
@@ -7,6 +8,11 @@ type Bar struct {
 }
 
 type Baz byte
+
+type Saz struct {
+	Point subpkg.Point
+	Foo   float64
+}
 
 const (
 	ABaz Baz = iota
