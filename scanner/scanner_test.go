@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/token"
 	"go/types"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -262,15 +263,28 @@ func TestScannerNotDir(t *testing.T) {
 	require.NotNil(err)
 }
 
-func TestScannerErrors(t *testing.T) {
+const errFile = `package barbaz
+
+import "bar/baz"
+
+type Bar struct {
+	baz.Foo
+}
+`
+
+func TestScannerError(t *testing.T) {
 	require := require.New(t)
+
+	require.Nil(os.MkdirAll(absPath("fixtures/error"), 0777))
+	require.Nil(ioutil.WriteFile(absPath("fixtures/error/foo.go"), []byte(errFile), 0777))
 
 	scanner, err := New(projectPkg("fixtures/error"))
 	require.Nil(err)
 
-	pkgs, err := scanner.Scan()
-	require.Nil(pkgs)
+	_, err = scanner.Scan()
 	require.NotNil(err)
+
+	require.Nil(os.RemoveAll(absPath("fixtures/error")))
 }
 
 func TestScanner(t *testing.T) {
@@ -349,4 +363,8 @@ func newNamed(path, name string, underlying types.Type) types.Type {
 
 func projectPkg(pkg string) string {
 	return filepath.Join(project, pkg)
+}
+
+func absPath(path string) string {
+	return filepath.Join(GoPath, "src", project, path)
 }
