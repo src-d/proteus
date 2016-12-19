@@ -18,7 +18,7 @@ type Package struct {
 
 // Import tries to import the given protobuf type to the current package.
 // If the type requires no import at all, nothing will be done.
-func (p *Package) Import(typ *ProtobufType) {
+func (p *Package) Import(typ *ProtoType) {
 	if typ.Import != "" && !p.isImported(typ.Import) {
 		p.Imports = append(p.Imports, typ.Import)
 	}
@@ -65,12 +65,11 @@ func (m *Message) isReserved(pos uint) bool {
 	return false
 }
 
-// Fields is the representation of a protobuf message field.
+// Field is the representation of a protobuf message field.
 type Field struct {
 	Name     string
 	Pos      int
 	Repeated bool
-	Nullable bool
 	Type     Type
 	Options  Options
 }
@@ -112,6 +111,7 @@ type LiteralValue struct {
 	val string
 }
 
+// NewLiteralValue creates a new literal option value.
 func NewLiteralValue(val string) LiteralValue {
 	return LiteralValue{val}
 }
@@ -126,6 +126,7 @@ type StringValue struct {
 	val string
 }
 
+// NewStringValue creates a new string option value.
 func NewStringValue(val string) StringValue {
 	return StringValue{val}
 }
@@ -149,6 +150,7 @@ type Named struct {
 	Name    string
 }
 
+// NewNamed creates a new Named type given its package and name.
 func NewNamed(pkg, name string) *Named {
 	return &Named{pkg, name}
 }
@@ -160,6 +162,7 @@ func (n Named) String() string {
 // Basic is one of the basic types of protobuf.
 type Basic string
 
+// NewBasic creates a new basic type given its name.
 func NewBasic(name string) *Basic {
 	b := Basic(name)
 	return &b
@@ -175,6 +178,7 @@ type Map struct {
 	Value Type
 }
 
+// NewMap creates a new Map type with the key and value types given.
 func NewMap(k, v Type) *Map {
 	return &Map{k, v}
 }
@@ -197,6 +201,7 @@ type Enum struct {
 // EnumValues is a collction of enumeration values.
 type EnumValues []*EnumValue
 
+// Add adds a new value to the list of values of the enum.
 func (v *EnumValues) Add(name string, val uint, options Options) {
 	*v = EnumValues(append(*v, &EnumValue{name, val, options}))
 }

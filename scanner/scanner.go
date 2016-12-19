@@ -29,31 +29,28 @@ type Package struct {
 // Type is neither a representation of a Go type nor a representation of a
 // protobuf type. Is an intermediate representation to ease future steps in
 // the conversion from Go to protobuf.
-// All types can be nullable (or not) or repeated (or not).
+// All types can be repeated (or not).
 type Type interface {
 	SetRepeated(bool)
-	SetNullable(bool)
 	IsRepeated() bool
-	IsNullable() bool
 }
 
 // BaseType contains the common fields for all the types.
 type BaseType struct {
-	Nullable bool
 	Repeated bool
 }
 
 func newBaseType() *BaseType {
 	return &BaseType{
-		Nullable: true,
 		Repeated: false,
 	}
 }
 
-func (t *BaseType) IsRepeated() bool   { return t.Repeated }
-func (t *BaseType) IsNullable() bool   { return t.Nullable }
+// IsRepeated reports wether the type is repeated or not.
+func (t *BaseType) IsRepeated() bool { return t.Repeated }
+
+// SetRepeated sets the type as repeated or not repeated.
 func (t *BaseType) SetRepeated(v bool) { t.Repeated = v }
-func (t *BaseType) SetNullable(v bool) { t.Nullable = v }
 
 // Basic is a basic type, which only is identified by its name.
 type Basic struct {
@@ -61,6 +58,7 @@ type Basic struct {
 	Name string
 }
 
+// NewBasic creates a new basic type given its name.
 func NewBasic(name string) Type {
 	return &Basic{
 		newBaseType(),
@@ -79,6 +77,7 @@ func (n Named) String() string {
 	return fmt.Sprintf("%s.%s", n.Path, n.Name)
 }
 
+// NewNamed creates a new named type given its package path and name.
 func NewNamed(path, name string) Type {
 	return &Named{
 		newBaseType(),
@@ -94,6 +93,7 @@ type Map struct {
 	Value Type
 }
 
+// NewMap creates a new map type with the given key and value types.
 func NewMap(key, val Type) Type {
 	return &Map{
 		newBaseType(),
@@ -114,6 +114,7 @@ type Struct struct {
 	Fields []*Field
 }
 
+// HasField reports wether a struct has a given field name.
 func (s *Struct) HasField(name string) bool {
 	for _, f := range s.Fields {
 		if f.Name == name {
@@ -136,17 +137,19 @@ type Scanner struct {
 	importer types.Importer
 }
 
+// ErrNoGoPathSet is the error returned when the GOPATH variable is not
+// set.
 var ErrNoGoPathSet = errors.New("GOPATH environment variable is not set")
 
 // New creates a new Scanner that will look for types and structs
 // only in the given packages.
 func New(packages ...string) (*Scanner, error) {
-	if GoPath == "" {
+	if goPath == "" {
 		return nil, ErrNoGoPathSet
 	}
 
 	for _, pkg := range packages {
-		p := filepath.Join(GoPath, "src", pkg)
+		p := filepath.Join(goPath, "src", pkg)
 		fi, err := os.Stat(p)
 		switch {
 		case err != nil:
@@ -368,5 +371,5 @@ func objName(obj types.Object) string {
 }
 
 func removeGoPath(path string) string {
-	return strings.Replace(path, filepath.Join(GoPath, "src")+"/", "", -1)
+	return strings.Replace(path, filepath.Join(goPath, "src")+"/", "", -1)
 }

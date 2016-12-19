@@ -6,11 +6,13 @@ import (
 	"github.com/src-d/proteus/scanner"
 )
 
+// Options are all the available options to configure proto generation.
 type Options struct {
 	BasePath string
 	Packages []string
 }
 
+// GenerateProtos generates proto files for the given options.
 func GenerateProtos(options Options) error {
 	scanner, err := scanner.New(options.Packages...)
 	if err != nil {

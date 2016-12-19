@@ -86,22 +86,22 @@ var mockMsg = &Message{
 		"is_cute": NewLiteralValue("true"),
 	},
 	Fields: []*Field{
-		&Field{
+		{
 			Name: "name",
 			Type: NewBasic("string"),
 			Pos:  1,
 		},
-		&Field{
+		{
 			Name: "born_at",
 			Type: NewNamed("google.protobuf", "Timestamp"),
 			Pos:  2,
 		},
-		&Field{
+		{
 			Name: "race",
 			Type: NewNamed("foo.bar", "PonyRace"),
 			Pos:  3,
 		},
-		&Field{
+		{
 			Name:     "nick_names",
 			Repeated: true,
 			Type:     NewBasic("string"),

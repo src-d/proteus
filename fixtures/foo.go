@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// Foo ...
 type Foo struct {
 	Bar
 	IntList   []int
@@ -16,8 +17,10 @@ type Foo struct {
 	Aliased   IntList
 }
 
+// IntList ...
 type IntList []int
 
+// Qux ...
 type Qux struct {
 	A int
 	B int

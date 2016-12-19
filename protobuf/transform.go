@@ -22,6 +22,7 @@ type Transformer struct {
 	mappings TypeMappings
 }
 
+// NewTransformer creates a new transformer instance.
 func NewTransformer() *Transformer {
 	return &Transformer{
 		mappings: make(TypeMappings),
@@ -106,7 +107,6 @@ func (t *Transformer) transformField(pkg *Package, field *scanner.Field, pos int
 		Pos:      pos,
 		Type:     typ,
 		Repeated: repeated,
-		Nullable: field.Type.IsNullable(),
 	}
 }
 
@@ -139,7 +139,7 @@ func (t *Transformer) transformType(pkg *Package, typ scanner.Type) Type {
 	return nil
 }
 
-func (t *Transformer) findMapping(name string) *ProtobufType {
+func (t *Transformer) findMapping(name string) *ProtoType {
 	typ := t.mappings[name]
 	if typ == nil {
 		typ = defaultMappings[name]

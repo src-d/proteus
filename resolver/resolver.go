@@ -18,11 +18,14 @@ type Resolver struct {
 	customTypes map[string]struct{}
 }
 
+// New creates a new Resolver with the default custom types registered.
+// These are time.Time and time.Duration. Those types will be considered correct
+// even though their packages are not in any of the packages given.
 func New() *Resolver {
 	return &Resolver{
 		customTypes: map[string]struct{}{
-			"time.Time":     struct{}{},
-			"time.Duration": struct{}{},
+			"time.Time":     {},
+			"time.Duration": {},
 		},
 	}
 }
@@ -30,8 +33,8 @@ func New() *Resolver {
 // Resolve checks the types of all the packages passed in a global manner.
 // Also, it sets to `true` the `Resolved` field of the package, meaning that
 // they can be safely used after it.
-func (r *Resolver) Resolve(pkgs Packages) {
-	info := pkgs.Info()
+func (r *Resolver) Resolve(pkgs []*scanner.Package) {
+	info := Packages(pkgs).Info()
 
 	for _, p := range pkgs {
 		r.resolvePackage(p, info)

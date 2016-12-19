@@ -82,8 +82,8 @@ type TransformerSuite struct {
 func (s *TransformerSuite) SetupTest() {
 	s.t = NewTransformer()
 	s.t.SetMappings(TypeMappings{
-		"url.URL":       &ProtobufType{Name: "string", Basic: true},
-		"time.Duration": &ProtobufType{Name: "uint64", Basic: true},
+		"url.URL":       &ProtoType{Name: "string", Basic: true},
+		"time.Duration": &ProtoType{Name: "uint64", Basic: true},
 	})
 	s.t.SetMappings(nil)
 	s.NotNil(s.t.mappings)
@@ -169,17 +169,17 @@ func (s *TransformerSuite) TestTransformField() {
 		{
 			"Foo",
 			scanner.NewBasic("int"),
-			&Field{Name: "foo", Type: NewBasic("int32"), Nullable: true},
+			&Field{Name: "foo", Type: NewBasic("int32")},
 		},
 		{
 			"Bar",
 			repeated(scanner.NewBasic("byte")),
-			&Field{Name: "bar", Type: NewBasic("bytes"), Nullable: true},
+			&Field{Name: "bar", Type: NewBasic("bytes")},
 		},
 		{
 			"BazBar",
 			repeated(scanner.NewBasic("int")),
-			&Field{Name: "baz_bar", Type: NewBasic("int32"), Repeated: true, Nullable: true},
+			&Field{Name: "baz_bar", Type: NewBasic("int32"), Repeated: true},
 		},
 		{
 			"Invalid",
@@ -201,11 +201,11 @@ func (s *TransformerSuite) TestTransformStruct() {
 	st := &scanner.Struct{
 		Name: "Foo",
 		Fields: []*scanner.Field{
-			&scanner.Field{
+			{
 				Name: "Invalid",
 				Type: scanner.NewBasic("complex64"),
 			},
-			&scanner.Field{
+			{
 				Name: "Bar",
 				Type: scanner.NewBasic("string"),
 			},

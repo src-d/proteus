@@ -10,14 +10,19 @@ import (
 	"github.com/src-d/proteus/report"
 )
 
+// Generator is in charge of generating the .proto files and write them
+// to disk in a file at the given path.
 type Generator struct {
 	basePath string
 }
 
+// NewGenerator creates a new Generator with the given base path.
 func NewGenerator(basePath string) *Generator {
 	return &Generator{basePath}
 }
 
+// Generate generates the proto3 .proto file of the given package and
+// writes it to disk.
 func (g *Generator) Generate(pkg *Package) error {
 	var buf bytes.Buffer
 	buf.WriteString(`syntax = "proto3";` + "\n")

@@ -15,16 +15,24 @@ import (
 )
 
 var (
-	GoPath = os.Getenv("GOPATH")
-	goSrc  = filepath.Join(GoPath, "src")
+	goPath = os.Getenv("GOPATH")
+	goSrc  = filepath.Join(goPath, "src")
 )
 
+// Importer is an implementation of `types.Importer` and `types.ImporterFrom`
+// that builds actual source files and not the compiled objects in the pkg
+// directory.
+// It is safe to use it concurrently as far as the underlying default importer
+// is thread safe.
+// A package is cached after building it the first time.
 type Importer struct {
 	mut             sync.RWMutex
 	cache           map[string]*types.Package
 	defaultImporter types.Importer
 }
 
+// NewImporter creates a new Importer instance with the default importer of
+// the runtime assigned as the underlying importer.
 func NewImporter() *Importer {
 	return &Importer{
 		cache:           make(map[string]*types.Package),
@@ -32,10 +40,20 @@ func NewImporter() *Importer {
 	}
 }
 
+// Import returns the imported package for the given import
+// path, or an error if the package couldn't be imported.
+// Two calls to Import with the same path return the same
+// package.
 func (i *Importer) Import(path string) (*types.Package, error) {
 	return i.ImportFrom(path, goSrc, 0)
 }
 
+// ImportFrom returns the imported package for the given import
+// path when imported by the package in srcDir, or an error
+// if the package couldn't be imported. The mode value must
+// be 0; it is reserved for future use.
+// Two calls to ImportFrom with the same path and srcDir return
+// the same package.
 func (i *Importer) ImportFrom(path, srcDir string, mode types.ImportMode) (*types.Package, error) {
 	i.mut.Lock()
 	if pkg, ok := i.cache[path]; ok {
@@ -50,7 +68,7 @@ func (i *Importer) ImportFrom(path, srcDir string, mode types.ImportMode) (*type
 	}
 
 	// If it's not on the GOPATH use the default importer instead
-	if !strings.HasPrefix(root, GoPath) {
+	if !strings.HasPrefix(root, goPath) {
 		imp, ok := i.defaultImporter.(types.ImporterFrom)
 		if ok {
 			return imp.ImportFrom(path, srcDir, mode)

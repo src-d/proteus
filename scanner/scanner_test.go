@@ -366,5 +366,5 @@ func projectPkg(pkg string) string {
 }
 
 func absPath(path string) string {
-	return filepath.Join(GoPath, "src", project, path)
+	return filepath.Join(goPath, "src", project, path)
 }

@@ -17,13 +17,13 @@ func TestImport(t *testing.T) {
 	pkg := new(Package)
 	require := require.New(t)
 
-	pkg.Import(&ProtobufType{})
+	pkg.Import(&ProtoType{})
 	require.Equal(0, len(pkg.Imports))
 
-	pkg.Import(&ProtobufType{Import: "foo"})
+	pkg.Import(&ProtoType{Import: "foo"})
 	require.Equal(1, len(pkg.Imports))
 
-	pkg.Import(&ProtobufType{Import: "foo"})
+	pkg.Import(&ProtoType{Import: "foo"})
 	require.Equal(1, len(pkg.Imports))
 }
 

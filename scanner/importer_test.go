@@ -8,7 +8,7 @@ import (
 )
 
 func TestGetSourceFiles(t *testing.T) {
-	_, paths, err := NewImporter().getSourceFiles(filepath.Join(project, "fixtures"), GoPath)
+	_, paths, err := NewImporter().getSourceFiles(filepath.Join(project, "fixtures"), goPath)
 	require.Nil(t, err)
 	expected := []string{
 		projectPath("fixtures/bar.go"),
