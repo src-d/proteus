@@ -15,31 +15,8 @@ var gopath = os.Getenv("GOPATH")
 
 const project = "github.com/src-d/proteus"
 
-func TestGetSourceFiles(t *testing.T) {
-	paths, err := getSourceFiles(projectPath("fixtures"))
-	require.Nil(t, err)
-	expected := []string{
-		projectPath("fixtures/bar.go"),
-		projectPath("fixtures/foo.go"),
-	}
-
-	require.Equal(t, expected, paths)
-}
-
 func projectPath(pkg string) string {
 	return filepath.Join(gopath, "src", project, pkg)
-}
-
-func TestParseSourceFiles(t *testing.T) {
-	paths := []string{
-		projectPath("fixtures/bar.go"),
-		projectPath("fixtures/foo.go"),
-	}
-
-	pkg, err := parseSourceFiles(projectPath("fixtures"), paths)
-	require.Nil(t, err)
-
-	require.Equal(t, "foo", pkg.Name())
 }
 
 func TestProcessType(t *testing.T) {
@@ -275,6 +252,25 @@ func TestProcessStruct(t *testing.T) {
 	for _, c := range cases {
 		require.Equal(t, c.expected, processStruct(&Struct{}, c.elem), c.name)
 	}
+}
+
+func TestScannerNotDir(t *testing.T) {
+	require := require.New(t)
+
+	scanner, err := New(projectPkg("fixtures/foo.go"))
+	require.Nil(scanner)
+	require.NotNil(err)
+}
+
+func TestScannerErrors(t *testing.T) {
+	require := require.New(t)
+
+	scanner, err := New(projectPkg("fixtures/error"))
+	require.Nil(err)
+
+	pkgs, err := scanner.Scan()
+	require.Nil(pkgs)
+	require.NotNil(err)
 }
 
 func TestScanner(t *testing.T) {
