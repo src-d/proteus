@@ -26,7 +26,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:        "folder, f",
-			Usage:       "All generated .proto files will be written in `FOLDER`.",
+			Usage:       "All generated .proto files will be written to `FOLDER`.",
 			Destination: &path,
 		},
 	}
