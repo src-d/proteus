@@ -16,5 +16,4 @@ proteus -f /path/to/output/folder \
 
 ### Features to come
 
-- [ ] Extensible mapped types via plugins.
-- [ ] Set protobuf options from struct tags and comments.
+- [ ] Extensible mapping and options via plugins (waiting for Go 1.8 release).
