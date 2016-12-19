@@ -35,23 +35,32 @@ func (s *GenSuite) TearDownTest() {
 	s.Nil(os.RemoveAll(s.path))
 }
 
-const expectedOptions = `	option bar = true;
+const expectedOptionsIndented = `	option bar = true;
 	option foo = "bar";
 `
 
+const expectedOptions = `option bar = true;
+option foo = "bar";
+`
+
 func (s *GenSuite) TestWriteOptions() {
-	writeOptions(s.buf, Options{
+	options := Options{
 		"foo": NewStringValue("bar"),
 		"bar": NewLiteralValue("true"),
-	})
+	}
 
+	writeOptions(s.buf, options, true)
+	s.Equal(expectedOptionsIndented, s.buf.String())
+
+	s.buf.Reset()
+	writeOptions(s.buf, options, false)
 	s.Equal(expectedOptions, s.buf.String())
 }
 
 const expectedEnum = `enum PonyRace {
 	option is_cute = true;
 	PINK_CUTIE = 0;
-	RED_FURY = 1;
+	RED_FURY = 1 [bar = "baz", foo = true];
 }
 `
 
@@ -62,7 +71,14 @@ var mockEnum = &Enum{
 	},
 	Values: EnumValues{
 		&EnumValue{Name: "PINK_CUTIE", Value: 0},
-		&EnumValue{Name: "RED_FURY", Value: 1},
+		&EnumValue{
+			Name:  "RED_FURY",
+			Value: 1,
+			Options: Options{
+				"foo": NewLiteralValue("true"),
+				"bar": NewStringValue("baz"),
+			},
+		},
 	},
 }
 
@@ -73,7 +89,8 @@ func (s *GenSuite) TestWriteEnum() {
 
 const expectedMsg = `message Pony {
 	option is_cute = true;
-	string name = 1;
+	reserved 5, 6;
+	string name = 1 [bar = "baz", foo = true];
 	google.protobuf.Timestamp born_at = 2;
 	foo.bar.PonyRace race = 3;
 	repeated string nick_names = 4;
@@ -85,11 +102,16 @@ var mockMsg = &Message{
 	Options: Options{
 		"is_cute": NewLiteralValue("true"),
 	},
+	Reserved: []uint{5, 6},
 	Fields: []*Field{
 		{
 			Name: "name",
 			Type: NewBasic("string"),
 			Pos:  1,
+			Options: Options{
+				"foo": NewLiteralValue("true"),
+				"bar": NewStringValue("baz"),
+			},
 		},
 		{
 			Name: "born_at",
@@ -120,6 +142,8 @@ package foo.bar;
 
 import "google/protobuf/timestamp.proto";
 
+option foo = true;
+
 %s
 %s
 `, expectedMsg, expectedEnum)
@@ -130,6 +154,7 @@ func (s *GenSuite) TestGenerate() {
 		Imports:  []string{"google/protobuf/timestamp.proto"},
 		Messages: []*Message{mockMsg},
 		Enums:    []*Enum{mockEnum},
+		Options:  Options{"foo": NewLiteralValue("true")},
 	})
 	s.Nil(err)
 
