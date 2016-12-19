@@ -85,19 +85,31 @@ type OptionValue interface {
 }
 
 // LiteralValue is a literal option value like true, false or a number.
-type LiteralValue string
+type LiteralValue struct {
+	val string
+}
+
+func NewLiteralValue(val string) LiteralValue {
+	return LiteralValue{val}
+}
 
 func (LiteralValue) isOptionValue() {}
 func (v LiteralValue) String() string {
-	return string(v)
+	return v.val
 }
 
 // StringValue is a string option value.
-type StringValue string
+type StringValue struct {
+	val string
+}
+
+func NewStringValue(val string) StringValue {
+	return StringValue{val}
+}
 
 func (StringValue) isOptionValue() {}
 func (v StringValue) String() string {
-	return fmt.Sprintf("%q", v)
+	return fmt.Sprintf("%q", v.val)
 }
 
 // Type is the common interface of all possible types, which are named types,

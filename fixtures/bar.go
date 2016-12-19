@@ -1,3 +1,4 @@
+// +build ignore
 package foo
 
 import "github.com/src-d/proteus/fixtures/subpkg"

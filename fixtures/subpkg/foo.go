@@ -1,3 +1,4 @@
+// +build ignore
 package subpkg
 
 type Point struct {
