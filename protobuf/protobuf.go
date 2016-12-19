@@ -103,6 +103,7 @@ func (v StringValue) String() string {
 // Type is the common interface of all possible types, which are named types,
 // maps and basic types.
 type Type interface {
+	fmt.Stringer
 	isType()
 }
 
@@ -117,12 +118,20 @@ func NewNamed(pkg, name string) *Named {
 	return &Named{pkg, name}
 }
 
+func (n Named) String() string {
+	return fmt.Sprintf("%s.%s", n.Package, n.Name)
+}
+
 // Basic is one of the basic types of protobuf.
 type Basic string
 
 func NewBasic(name string) *Basic {
 	b := Basic(name)
 	return &b
+}
+
+func (b Basic) String() string {
+	return string(b)
 }
 
 // Map is a key-value map type.
@@ -133,6 +142,10 @@ type Map struct {
 
 func NewMap(k, v Type) *Map {
 	return &Map{k, v}
+}
+
+func (m Map) String() string {
+	return fmt.Sprintf("map<%s, %s>", m.Key, m.Value)
 }
 
 func (*Named) isType() {}
