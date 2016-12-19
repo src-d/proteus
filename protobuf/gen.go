@@ -24,11 +24,13 @@ func (g *Generator) Generate(pkg *Package) error {
 
 	writePackageData(&buf, pkg)
 	for _, msg := range pkg.Messages {
-		writeMessage(&buf, pkg.Name, msg)
+		writeMessage(&buf, msg)
+		buf.WriteRune('\n')
 	}
 
 	for _, enum := range pkg.Enums {
 		writeEnum(&buf, enum)
+		buf.WriteRune('\n')
 	}
 
 	return g.writeFile(pkg.Path, buf.Bytes())
@@ -68,7 +70,7 @@ func writePackageData(buf *bytes.Buffer, pkg *Package) {
 	buf.WriteRune('\n')
 }
 
-func writeMessage(buf *bytes.Buffer, pkg string, msg *Message) {
+func writeMessage(buf *bytes.Buffer, msg *Message) {
 	buf.WriteString(fmt.Sprintf("message %s {\n", msg.Name))
 	writeOptions(buf, msg.Options)
 
@@ -86,7 +88,7 @@ func writeMessage(buf *bytes.Buffer, pkg string, msg *Message) {
 		buf.WriteString(fmt.Sprintf(" %s = %d;\n", f.Name, f.Pos))
 	}
 
-	buf.WriteString("}\n\n")
+	buf.WriteString("}\n")
 }
 
 func writeEnum(buf *bytes.Buffer, enum *Enum) {
@@ -98,11 +100,12 @@ func writeEnum(buf *bytes.Buffer, enum *Enum) {
 		buf.WriteString(fmt.Sprintf("\t%s = %d;\n", v.Name, v.Value))
 	}
 
-	buf.WriteString("}\n\n")
+	buf.WriteString("}\n")
 }
 
 func writeOptions(buf *bytes.Buffer, options Options) {
-	for n, opt := range options {
-		buf.WriteString(fmt.Sprintf("\toption %s = %s;\n", n, opt))
+	for _, opt := range options.Sorted() {
+		fmt.Println(opt)
+		buf.WriteString(fmt.Sprintf("\toption %s = %s;\n", opt.Name, opt.Value))
 	}
 }

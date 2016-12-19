@@ -3,6 +3,7 @@ package protobuf
 import (
 	"fmt"
 	"path/filepath"
+	"sort"
 )
 
 // Package represents an unique .proto file with its own package definition.
@@ -76,6 +77,28 @@ type Field struct {
 
 // Options are the set of options given to a field, message or enum value.
 type Options map[string]OptionValue
+
+// Option name and value pair.
+type Option struct {
+	Name  string
+	Value OptionValue
+}
+
+// Sorted returns a sorted set of options.
+func (o Options) Sorted() []*Option {
+	var names = make([]string, 0, len(o))
+	for k := range o {
+		names = append(names, k)
+	}
+
+	sort.Stable(sort.StringSlice(names))
+	var opts = make([]*Option, len(o))
+	for i, n := range names {
+		opts[i] = &Option{Name: n, Value: o[n]}
+	}
+
+	return opts
+}
 
 // OptionValue is the common interface for the value of an option, which can be
 // a literal value (a number, true, etc) or a string value ("foo").
