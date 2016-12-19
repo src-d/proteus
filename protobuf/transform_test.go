@@ -217,7 +217,7 @@ func (s *TransformerSuite) TestTransformStruct() {
 	s.Equal(1, len(msg.Fields), "should have one field")
 	s.Equal(2, msg.Fields[0].Pos)
 	s.Equal(1, len(msg.Reserved), "should have reserved field")
-	s.Equal(1, msg.Reserved[0])
+	s.Equal(uint(1), msg.Reserved[0])
 }
 
 func (s *TransformerSuite) TestTransformEnum() {
