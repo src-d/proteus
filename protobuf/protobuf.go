@@ -43,14 +43,25 @@ func (p *Package) isImported(file string) bool {
 // Message is the representation of a Protobuf message.
 type Message struct {
 	Name     string
-	Reserved []int
+	Reserved []uint
 	Options  Options
 	Fields   []*Field
 }
 
 // Reserve reserves a position in the message.
-func (m *Message) Reserve(pos int) {
-	m.Reserved = append(m.Reserved, pos)
+func (m *Message) Reserve(pos uint) {
+	if !m.isReserved(pos) {
+		m.Reserved = append(m.Reserved, pos)
+	}
+}
+
+func (m *Message) isReserved(pos uint) bool {
+	for _, r := range m.Reserved {
+		if r == pos {
+			return true
+		}
+	}
+	return false
 }
 
 // Fields is the representation of a protobuf message field.

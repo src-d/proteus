@@ -73,7 +73,7 @@ func (t *Transformer) transformStruct(pkg *Package, s *scanner.Struct) *Message 
 	for i, f := range s.Fields {
 		field := t.transformField(pkg, f, i+1)
 		if field == nil {
-			msg.Reserve(i + 1)
+			msg.Reserve(uint(i) + 1)
 			report.Warn("field %q of struct %q has an invalid type, ignoring field but reserving its position", f.Name, s.Name)
 			continue
 		}
@@ -127,6 +127,8 @@ func (t *Transformer) transformType(pkg *Package, typ scanner.Type) Type {
 			pkg.Import(protoType)
 			return protoType.Type()
 		}
+
+		report.Warn("basic type %q is not defined in the mappings, ignoring", ty.Name)
 	case *scanner.Map:
 		return NewMap(
 			t.transformType(pkg, ty.Key),
@@ -134,8 +136,6 @@ func (t *Transformer) transformType(pkg *Package, typ scanner.Type) Type {
 		)
 	}
 
-	// TODO: only way to reach this is with a basic type that is not defined in the
-	// mappings. Probably should panic?
 	return nil
 }
 
