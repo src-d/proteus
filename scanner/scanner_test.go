@@ -128,7 +128,7 @@ func TestProcessStruct(t *testing.T) {
 					mkField("Foo", types.Typ[types.Int], false),
 					mkField("Bar", types.Typ[types.String], false),
 				},
-				[]string{"", `proto:"-"`},
+				[]string{"", `proteus:"-"`},
 			),
 			&Struct{
 				Fields: []*Field{
@@ -301,13 +301,14 @@ func TestScanner(t *testing.T) {
 	subpkg := pkgs[1]
 
 	require.Equal(4, len(pkg.Structs), "pkg")
-	assertStruct(t, pkg.Structs[0], "Bar", "Bar", "Baz")
-	assertStruct(t, pkg.Structs[1], "Foo", "Bar", "Baz", "IntList", "IntArray", "Map", "Timestamp", "External", "Duration", "Aliased")
-	assertStruct(t, pkg.Structs[2], "Qux", "A", "B")
-	assertStruct(t, pkg.Structs[3], "Saz", "Point", "Foo")
+	assertStruct(t, pkg.Structs[0], "Bar", true, "Bar", "Baz")
+	assertStruct(t, pkg.Structs[1], "Foo", true, "Bar", "Baz", "IntList", "IntArray", "Map", "Timestamp", "External", "Duration", "Aliased")
+	assertStruct(t, pkg.Structs[2], "Qux", false, "A", "B")
+	assertStruct(t, pkg.Structs[3], "Saz", true, "Point", "Foo")
 
-	require.Equal(1, len(subpkg.Structs), "subpkg")
-	assertStruct(t, subpkg.Structs[0], "Point", "X", "Y")
+	require.Equal(2, len(subpkg.Structs), "subpkg")
+	assertStruct(t, subpkg.Structs[0], "NotGenerated", false)
+	assertStruct(t, subpkg.Structs[1], "Point", true, "X", "Y")
 
 	_, ok := pkg.Aliases[fmt.Sprintf("%s.%s", projectPath("fixtures"), "Baz")]
 	require.False(ok, "Baz should not be an alias anymore")
@@ -322,13 +323,14 @@ func TestScanner(t *testing.T) {
 	)
 }
 
-func assertStruct(t *testing.T, s *Struct, name string, fields ...string) {
+func assertStruct(t *testing.T, s *Struct, name string, generate bool, fields ...string) {
 	require.Equal(
 		t,
 		name,
 		s.Name,
 		"struct name",
 	)
+	require.Equal(t, generate, s.Generate, "struct should be generated")
 
 	require.Equal(t, len(fields), len(s.Fields), "should have same struct fields")
 	for _, f := range fields {

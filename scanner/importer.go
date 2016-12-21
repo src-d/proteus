@@ -26,8 +26,9 @@ var (
 // is thread safe.
 // A package is cached after building it the first time.
 type Importer struct {
-	mut             sync.RWMutex
-	cache           map[string]*types.Package
+	mut   sync.RWMutex
+	cache map[string]*types.Package
+
 	defaultImporter types.Importer
 }
 

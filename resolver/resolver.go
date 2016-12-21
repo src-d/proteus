@@ -34,7 +34,7 @@ func New() *Resolver {
 // Also, it sets to `true` the `Resolved` field of the package, meaning that
 // they can be safely used after it.
 func (r *Resolver) Resolve(pkgs []*scanner.Package) {
-	info := Packages(pkgs).Info()
+	info := getPackagesInfo(pkgs)
 
 	for _, p := range pkgs {
 		r.resolvePackage(p, info)
@@ -46,14 +46,27 @@ func (r *Resolver) isCustomType(n *scanner.Named) bool {
 	return ok
 }
 
-func (r *Resolver) resolvePackage(p *scanner.Package, info *PackagesInfo) {
+func (r *Resolver) resolvePackage(p *scanner.Package, info *packagesInfo) {
 	for _, s := range p.Structs {
 		s.Fields = r.resolveStructFields(s.Fields, info)
 	}
+
+	r.removeUnmarkedStructs(p, info)
 	p.Resolved = true
 }
 
-func (r *Resolver) resolveStructFields(fields []*scanner.Field, info *PackagesInfo) []*scanner.Field {
+func (r *Resolver) removeUnmarkedStructs(p *scanner.Package, info *packagesInfo) {
+	var structs []*scanner.Struct
+	for _, s := range p.Structs {
+		name := fmt.Sprintf("%s.%s", p.Path, s.Name)
+		if info.isStructMarked(name) {
+			structs = append(structs, s)
+		}
+	}
+	p.Structs = structs
+}
+
+func (r *Resolver) resolveStructFields(fields []*scanner.Field, info *packagesInfo) []*scanner.Field {
 	var result = make([]*scanner.Field, 0, len(fields))
 
 	for _, f := range fields {
@@ -66,21 +79,25 @@ func (r *Resolver) resolveStructFields(fields []*scanner.Field, info *PackagesIn
 	return result
 }
 
-func (r *Resolver) resolveType(typ scanner.Type, info *PackagesInfo) (result scanner.Type) {
+func (r *Resolver) resolveType(typ scanner.Type, info *packagesInfo) (result scanner.Type) {
 	switch t := typ.(type) {
 	case *scanner.Named:
 		if r.isCustomType(t) {
 			return t
 		}
 
-		if _, ok := info.Packages[t.Path]; !ok {
+		if !info.hasPackage(t.Path) {
 			report.Warn("type %q of package %s will be ignored because it was not present on the scan path", t.Name, t.Path)
 			return nil
 		}
 
-		alias := info.AliasOf(t)
+		alias := info.aliasOf(t)
 		if alias != nil {
 			return alias
+		}
+
+		if info.isStruct(t.String()) {
+			info.markStruct(t.String())
 		}
 
 		result = t
@@ -95,34 +112,36 @@ func (r *Resolver) resolveType(typ scanner.Type, info *PackagesInfo) (result sca
 	return
 }
 
-// Packages is a collection of scanned packages.
-type Packages []*scanner.Package
-
-// Info retrieves some information about a list of packages like the
+// getPackagesInfo retrieves some information about a list of packages like the
 // aliases in all of them combined and the paths of all the packages.
 // Note that enums are removed from the aliases as we do not want to
 // think of them as aliases but as named types instead.
-func (pkgs Packages) Info() *PackagesInfo {
-	result := &PackagesInfo{
-		Aliases:  make(map[string]scanner.Type),
-		Packages: make(map[string]struct{}),
+func getPackagesInfo(pkgs []*scanner.Package) *packagesInfo {
+	result := &packagesInfo{
+		aliases:  make(map[string]scanner.Type),
+		packages: make(map[string]struct{}),
+		structs:  make(map[string]bool),
 	}
-	enums := pkgs.Enums()
+	enums := packagesEnums(pkgs)
 
 	for _, p := range pkgs {
-		result.Packages[p.Path] = struct{}{}
+		result.packages[p.Path] = struct{}{}
 		for n, t := range p.Aliases {
 			if _, ok := enums[n]; !ok {
-				result.Aliases[n] = t
+				result.aliases[n] = t
 			}
+		}
+
+		for _, s := range p.Structs {
+			result.structs[fmt.Sprintf("%s.%s", p.Path, s.Name)] = s.Generate
 		}
 	}
 
 	return result
 }
 
-// Enums returns a set with all the enums in all packages.
-func (pkgs Packages) Enums() map[string]struct{} {
+// packagesEnums returns a set with all the enums in all packages.
+func packagesEnums(pkgs []*scanner.Package) map[string]struct{} {
 	result := make(map[string]struct{})
 
 	for _, p := range pkgs {
@@ -134,18 +153,37 @@ func (pkgs Packages) Enums() map[string]struct{} {
 	return result
 }
 
-// PackagesInfo contains information about a collection of packages.
-type PackagesInfo struct {
-	Aliases  map[string]scanner.Type
-	Packages map[string]struct{}
+// packagesInfo contains information about a collection of packages.
+type packagesInfo struct {
+	aliases  map[string]scanner.Type
+	packages map[string]struct{}
+	structs  map[string]bool
 }
 
-// AliasOf returns the alias of a given named type or nil if there is
+// aliasOf returns the alias of a given named type or nil if there is
 // no alias for that type.
-func (i *PackagesInfo) AliasOf(named *scanner.Named) scanner.Type {
-	alias, ok := i.Aliases[named.String()]
+func (i *packagesInfo) aliasOf(named *scanner.Named) scanner.Type {
+	alias, ok := i.aliases[named.String()]
 	if !ok {
 		return nil
 	}
 	return alias
+}
+
+func (i *packagesInfo) isStruct(name string) bool {
+	_, ok := i.structs[name]
+	return ok
+}
+
+func (i *packagesInfo) markStruct(name string) {
+	i.structs[name] = true
+}
+
+func (i *packagesInfo) isStructMarked(name string) bool {
+	return i.structs[name]
+}
+
+func (i *packagesInfo) hasPackage(path string) bool {
+	_, ok := i.packages[path]
+	return ok
 }

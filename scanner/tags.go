@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var protoTagRegex = regexp.MustCompile(`proto:"([^"]+)"`)
+var protoTagRegex = regexp.MustCompile(`proteus:"([^"]+)"`)
 
 func findProtoTags(tag string) []string {
 	if !protoTagRegex.MatchString(tag) {

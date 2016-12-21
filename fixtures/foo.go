@@ -6,6 +6,7 @@ import (
 )
 
 // Foo ...
+//proteus:generate
 type Foo struct {
 	Bar
 	IntList   []int
@@ -18,6 +19,7 @@ type Foo struct {
 }
 
 // IntList ...
+//proteus:generate
 type IntList []int
 
 // Qux ...

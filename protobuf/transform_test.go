@@ -259,7 +259,7 @@ func (s *TransformerSuite) fixtures() []*scanner.Package {
 	s.Nil(err)
 	pkgs, err := sc.Scan()
 	s.Nil(err)
-	resolver.New().Resolve(resolver.Packages(pkgs))
+	resolver.New().Resolve(pkgs)
 	return pkgs
 }
 
