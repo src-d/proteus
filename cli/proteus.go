@@ -6,15 +6,17 @@ import (
 	"os"
 
 	"github.com/src-d/proteus"
+	"github.com/src-d/proteus/report"
 	"github.com/urfave/cli"
 )
 
-func main() {
-	var (
-		packages cli.StringSlice
-		path     string
-	)
+var (
+	packages cli.StringSlice
+	path     string
+	verbose  bool
+)
 
+func main() {
 	app := cli.NewApp()
 	app.Description = "Generate .proto files from your Go packages."
 	app.Version = "0.9.0"
@@ -29,28 +31,38 @@ func main() {
 			Usage:       "All generated .proto files will be written to `FOLDER`.",
 			Destination: &path,
 		},
+		cli.BoolFlag{
+			Name:        "verbose",
+			Usage:       "Print all warnings and info messages.",
+			Destination: &verbose,
+		},
 	}
 
-	app.Action = func(c *cli.Context) error {
-		if path == "" {
-			return errors.New("destination path cannot be empty")
-		}
-
-		if err := checkFolder(path); err != nil {
-			return err
-		}
-
-		if len(packages) == 0 {
-			return errors.New("no package provided, there is nothing to generate")
-		}
-
-		return proteus.GenerateProtos(proteus.Options{
-			BasePath: path,
-			Packages: packages,
-		})
-	}
-
+	app.Action = action
 	app.Run(os.Args)
+}
+
+func action(c *cli.Context) error {
+	if path == "" {
+		return errors.New("destination path cannot be empty")
+	}
+
+	if err := checkFolder(path); err != nil {
+		return err
+	}
+
+	if len(packages) == 0 {
+		return errors.New("no package provided, there is nothing to generate")
+	}
+
+	if !verbose {
+		report.Silent()
+	}
+
+	return proteus.GenerateProtos(proteus.Options{
+		BasePath: path,
+		Packages: packages,
+	})
 }
 
 func checkFolder(p string) error {

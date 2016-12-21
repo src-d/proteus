@@ -6,11 +6,19 @@ import (
 	"github.com/fatih/color"
 )
 
+var silent bool
+
+func Silent() {
+	silent = true
+}
+
 type colorFunc func(string, ...interface{}) string
 
 // Warn prints a formatted warn message to stdout.
 func Warn(format string, args ...interface{}) {
-	report(color.YellowString, "WARN", format, args...)
+	if !silent {
+		report(color.YellowString, "WARN", format, args...)
+	}
 }
 
 // Error prints a formatted error message to stdout.
@@ -20,7 +28,9 @@ func Error(format string, args ...interface{}) {
 
 // Info prints a formatted info message to stdout.
 func Info(format string, args ...interface{}) {
-	report(color.GreenString, "INFO", format, args...)
+	if !silent {
+		report(color.GreenString, "INFO", format, args...)
+	}
 }
 
 func report(color colorFunc, lvl string, format string, args ...interface{}) {
