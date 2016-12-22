@@ -101,7 +101,7 @@ func buildPackage(ctx *context, gopkg *types.Package) (*Package, error) {
 	objs := objectsInScope(gopkg.Scope())
 
 	pkg := &Package{
-		Path:    removeGoPath(gopkg.Path()),
+		Path:    removeGoPath(gopkg),
 		Name:    gopkg.Name(),
 		Aliases: make(map[string]Type),
 	}
@@ -115,40 +115,66 @@ func buildPackage(ctx *context, gopkg *types.Package) (*Package, error) {
 }
 
 func (p *Package) scanObject(ctx *context, o types.Object) {
-	n, ok := o.Type().(*types.Named)
-	if !ok || !o.Exported() {
+	if !o.Exported() {
 		return
 	}
 
-	switch o.(type) {
-	case *types.Var, *types.Const:
-		if _, ok := n.Underlying().(*types.Basic); ok {
-			scanEnumValue(ctx, o.Name(), n)
+	switch t := o.Type().(type) {
+	case *types.Named:
+		switch o.(type) {
+		case *types.Const:
+			if _, ok := t.Underlying().(*types.Basic); ok {
+				scanEnumValue(ctx, o.Name(), t)
+			}
+		case *types.TypeName:
+			if s, ok := t.Underlying().(*types.Struct); ok {
+				st := scanStruct(&Struct{
+					Name:     o.Name(),
+					Generate: ctx.shouldGenerateType(o.Name()),
+				}, s)
+				p.Structs = append(p.Structs, st)
+				return
+			}
+
+			p.Aliases[objName(t.Obj())] = scanType(t.Underlying())
 		}
-		return
+	case *types.Signature:
+		if ctx.shouldGenerateFunc(nameForFunc(o)) {
+			fn := scanFunc(&Func{Name: o.Name()}, t)
+			p.Funcs = append(p.Funcs, fn)
+		}
+	}
+}
+
+func nameForFunc(o types.Object) (name string) {
+	s := o.Type().(*types.Signature)
+
+	if s.Recv() != nil {
+		name = nameForType(s.Recv().Type()) + "."
 	}
 
-	if s, ok := n.Underlying().(*types.Struct); ok {
-		st := scanStruct(&Struct{
-			Name:     o.Name(),
-			Generate: ctx.shouldGenerateType(o.Name()),
-		}, s)
-		p.Structs = append(p.Structs, st)
-		return
-	}
+	name = name + o.Name()
 
-	p.Aliases[objName(n.Obj())] = scanType(n.Underlying())
+	return
+}
+
+func nameForType(o types.Type) (name string) {
+	name = o.String()
+	i := strings.LastIndex(name, ".")
+	name = name[i+1 : len(name)]
+
+	return
 }
 
 func scanType(typ types.Type) (t Type) {
 	switch u := typ.(type) {
-	case *types.Named:
-		t = NewNamed(
-			removeGoPath(u.Obj().Pkg().Path()),
-			u.Obj().Name(),
-		)
 	case *types.Basic:
 		t = NewBasic(u.Name())
+	case *types.Named:
+		t = NewNamed(
+			removeGoPath(u.Obj().Pkg()),
+			u.Obj().Name(),
+		)
 	case *types.Slice:
 		t = scanType(u.Elem())
 		t.SetRepeated(true)
@@ -217,6 +243,27 @@ func scanStruct(s *Struct, elem *types.Struct) *Struct {
 	return s
 }
 
+func scanFunc(fn *Func, signature *types.Signature) *Func {
+	if signature.Recv() != nil {
+		fn.Receiver = scanType(signature.Recv().Type())
+	}
+	fn.Input = scanTuple(signature.Params())
+	fn.Output = scanTuple(signature.Results())
+	fn.IsVariadic = signature.Variadic()
+
+	return fn
+}
+
+func scanTuple(tuple *types.Tuple) []Type {
+	result := make([]Type, 0, tuple.Len())
+
+	for i := 0; i < tuple.Len(); i++ {
+		result = append(result, scanType(tuple.At(i).Type()))
+	}
+
+	return result
+}
+
 func findStruct(t types.Type) *types.Struct {
 	switch elem := t.(type) {
 	case *types.Pointer:
@@ -280,17 +327,41 @@ func isIgnoredField(f *types.Var, tags []string) bool {
 
 func objectsInScope(scope *types.Scope) (objs []types.Object) {
 	for _, n := range scope.Names() {
-		objs = append(objs, scope.Lookup(n))
+		obj := scope.Lookup(n)
+		objs = append(objs, obj)
+
+		typ := obj.Type()
+
+		if _, ok := typ.Underlying().(*types.Struct); ok {
+			// Only need to extract methods for the pointer type since it contains
+			// the methods for the non-pointer type as well.
+			objs = append(objs, methodsForType(types.NewPointer(typ))...)
+		}
 	}
 	return
 }
 
-func objName(obj types.Object) string {
-	return fmt.Sprintf("%s.%s", removeGoPath(obj.Pkg().Path()), obj.Name())
+func methodsForType(typ types.Type) (objs []types.Object) {
+	methods := types.NewMethodSet(typ)
+
+	for i := 0; i < methods.Len(); i++ {
+		objs = append(objs, methods.At(i).Obj())
+	}
+
+	return
 }
 
-func removeGoPath(path string) string {
-	return strings.Replace(path, filepath.Join(goPath, "src")+"/", "", -1)
+func objName(obj types.Object) string {
+	return fmt.Sprintf("%s.%s", removeGoPath(obj.Pkg()), obj.Name())
+}
+
+func removeGoPath(pkg *types.Package) string {
+	// error is a type.Named whose package is nil.
+	if pkg == nil {
+		return ""
+	} else {
+		return strings.Replace(pkg.Path(), filepath.Join(goPath, "src")+"/", "", -1)
+	}
 }
 
 type errorList []error

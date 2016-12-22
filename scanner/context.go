@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"errors"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -21,6 +22,10 @@ type context struct {
 	// object instead of a ValueSpec because the iota of the const is not
 	// available there.
 	consts map[string]*ast.Object
+	// funcs holds the func objects indexed by the function or method name.
+	// In case of methods, it's indexed by their qualified name, that is,
+	// "TypeName.FuncName".
+	funcs map[string]*ast.FuncDecl
 	// enumValues contains all the values found until a point in time.
 	// It is indexed by qualified type name e.g: time.Time
 	enumValues map[string][]string
@@ -54,31 +59,60 @@ func newContext(path string) (*context, error) {
 		return nil, err
 	}
 
+	types, funcs := findPkgTypesAndFuncs(pkg)
 	return &context{
-		types:      findPkgTypes(pkg),
+		types:      types,
+		funcs:      funcs,
 		consts:     findObjectsOfType(pkg, ast.Con),
 		enumValues: make(map[string][]string),
 	}, nil
 }
 
-func findPkgTypes(pkg *ast.Package) map[string]*ast.TypeSpec {
+func findPkgTypesAndFuncs(pkg *ast.Package) (map[string]*ast.TypeSpec, map[string]*ast.FuncDecl) {
 	f := ast.MergePackageFiles(pkg, 0)
 
 	var types = make(map[string]*ast.TypeSpec)
+	var funcs = make(map[string]*ast.FuncDecl)
 	for _, d := range f.Decls {
-		decl := d.(*ast.GenDecl)
-		if decl.Tok == token.TYPE {
-			for _, s := range decl.Specs {
-				spec := s.(*ast.TypeSpec)
-				if spec.Doc == nil {
-					spec.Doc = decl.Doc
+		switch decl := d.(type) {
+		case *ast.GenDecl:
+			if decl.Tok == token.TYPE {
+				for _, s := range decl.Specs {
+					spec := s.(*ast.TypeSpec)
+					if spec.Doc == nil {
+						spec.Doc = decl.Doc
+					}
+					types[spec.Name.Name] = spec
 				}
-				types[spec.Name.Name] = spec
 			}
+		case *ast.FuncDecl:
+			funcs[findName(decl)] = decl
 		}
 	}
 
-	return types
+	return types, funcs
+}
+
+func findName(decl *ast.FuncDecl) (name string) {
+	name = decl.Name.Name
+	if decl.Recv == nil || len(decl.Recv.List) < 1 {
+		return
+	}
+
+	var qualifier string
+	switch t := decl.Recv.List[0].Type.(type) {
+	case *ast.StarExpr:
+		if ident, ok := t.X.(*ast.Ident); ok {
+			qualifier = ident.Name
+		}
+	case *ast.Ident:
+		qualifier = t.Name
+	}
+
+	if qualifier != "" {
+		return fmt.Sprintf("%s.%s", qualifier, name)
+	}
+	return
 }
 
 func findObjectsOfType(pkg *ast.Package, kind ast.ObjKind) map[string]*ast.Object {
@@ -99,10 +133,22 @@ const genComment = `//proteus:generate`
 
 func (ctx *context) shouldGenerateType(name string) bool {
 	if typ, ok := ctx.types[name]; ok && typ.Doc != nil {
-		for _, l := range typ.Doc.List {
-			if strings.HasPrefix(l.Text, genComment) {
-				return true
-			}
+		return hasGenerateComment(typ.Doc)
+	}
+	return false
+}
+
+func (ctx *context) shouldGenerateFunc(name string) bool {
+	if fn, ok := ctx.funcs[name]; ok && fn.Doc != nil {
+		return hasGenerateComment(fn.Doc)
+	}
+	return false
+}
+
+func hasGenerateComment(doc *ast.CommentGroup) bool {
+	for _, l := range doc.List {
+		if strings.HasPrefix(l.Text, genComment) {
+			return true
 		}
 	}
 	return false

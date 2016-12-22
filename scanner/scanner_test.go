@@ -255,6 +255,103 @@ func TestScanStruct(t *testing.T) {
 	}
 }
 
+func TestScannerScanFunc(t *testing.T) {
+	cases := []struct {
+		name      string
+		signature *types.Signature
+		expected  *Func
+	}{
+		{
+			"empty",
+			types.NewSignature(
+				nil,
+				types.NewTuple(),
+				types.NewTuple(),
+				false,
+			),
+			&Func{
+				Input:  make([]Type, 0),
+				Output: make([]Type, 0),
+			},
+		},
+		{
+			"with receiver",
+			types.NewSignature(
+				mkParam("p", types.Typ[types.Int32]),
+				types.NewTuple(),
+				types.NewTuple(),
+				false,
+			),
+			&Func{
+				Receiver: NewBasic("int32"),
+				Input:    make([]Type, 0),
+				Output:   make([]Type, 0),
+			},
+		},
+		{
+			"with params",
+			types.NewSignature(
+				nil,
+				types.NewTuple(
+					mkParam("a", types.Typ[types.Int32]),
+					mkParam("b", types.Typ[types.String]),
+				),
+				types.NewTuple(),
+				false,
+			),
+			&Func{
+				Input:  []Type{NewBasic("int32"), NewBasic("string")},
+				Output: make([]Type, 0),
+			},
+		},
+		{
+			"with result",
+			types.NewSignature(
+				nil,
+				types.NewTuple(),
+				types.NewTuple(mkParam("a", types.Typ[types.String])),
+				false,
+			),
+			&Func{
+				Input:  make([]Type, 0),
+				Output: []Type{NewBasic("string")},
+			},
+		},
+		{
+			"with everything",
+			types.NewSignature(
+				mkParam("a", types.Typ[types.Bool]),
+				types.NewTuple(mkParam("b", types.Typ[types.Int32]), mkParam("c", types.Typ[types.String])),
+				types.NewTuple(mkParam("d", types.Typ[types.Float32])),
+				false,
+			),
+			&Func{
+				Receiver: NewBasic("bool"),
+				Input:    []Type{NewBasic("int32"), NewBasic("string")},
+				Output:   []Type{NewBasic("float32")},
+			},
+		},
+		{
+			"variadic",
+			types.NewSignature(
+				nil,
+				types.NewTuple(mkParam("a", types.NewSlice(types.Typ[types.Int32]))),
+				types.NewTuple(),
+				true,
+			),
+			&Func{
+				Input:      []Type{repeated(NewBasic("int32"))},
+				Output:     make([]Type, 0),
+				IsVariadic: true,
+			},
+		},
+	}
+
+	for _, c := range cases {
+		require.Equal(t, c.expected, scanFunc(&Func{}, c.signature), c.name)
+	}
+}
+
 func TestScannerNotDir(t *testing.T) {
 	require := require.New(t)
 
@@ -321,6 +418,12 @@ func TestScanner(t *testing.T) {
 		pkg.Enums[0].Values,
 		"enum values",
 	)
+
+	require.Equal(0, len(pkg.Funcs), "pkg funcs")
+	require.Equal(3, len(subpkg.Funcs), "subpkg funcs")
+	assertFunc(t, subpkg.Funcs[0], "Generated", "", []string{"string"}, []string{"bool", "error"}, false)
+	assertFunc(t, subpkg.Funcs[1], "GeneratedMethod", "Point", []string{"int32"}, []string{"Point"}, false)
+	assertFunc(t, subpkg.Funcs[2], "GeneratedMethodOnPointer", "Point", []string{"bool"}, []string{"Point"}, false)
 }
 
 func assertStruct(t *testing.T, s *Struct, name string, generate bool, fields ...string) {
@@ -338,6 +441,35 @@ func assertStruct(t *testing.T, s *Struct, name string, generate bool, fields ..
 	}
 }
 
+func assertFunc(t *testing.T, fn *Func, name string, recv string, input []string, result []string, variadic bool) {
+	require.Equal(t, name, fn.Name, "func name")
+
+	if fn.Receiver != nil {
+		require.Equal(t, recv, typeFrom(fn.Receiver), "receiver")
+	}
+
+	for idx, in := range fn.Input {
+		require.Equal(t, input[idx], typeFrom(in), fmt.Sprintf("input %d", idx))
+	}
+
+	for idx, out := range fn.Output {
+		require.Equal(t, result[idx], typeFrom(out), fmt.Sprintf("output %d", idx))
+	}
+
+	require.Equal(t, variadic, fn.IsVariadic, "is variadic")
+}
+
+func typeFrom(t Type) string {
+	switch t.(type) {
+	case *Named:
+		return t.(*Named).Name
+	case *Basic:
+		return t.(*Basic).Name
+	}
+
+	return ""
+}
+
 func mkField(name string, typ types.Type, anon bool) *types.Var {
 	return types.NewField(
 		token.NoPos,
@@ -345,6 +477,15 @@ func mkField(name string, typ types.Type, anon bool) *types.Var {
 		name,
 		typ,
 		anon,
+	)
+}
+
+func mkParam(name string, typ types.Type) *types.Var {
+	return types.NewParam(
+		token.NoPos,
+		types.NewPackage("/foo", "mock"),
+		name,
+		typ,
 	)
 }
 
