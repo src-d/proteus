@@ -28,6 +28,11 @@ func (g *Generator) Generate(pkg *Package) error {
 	buf.WriteString(`syntax = "proto3";` + "\n")
 
 	writePackageData(&buf, pkg)
+	if len(pkg.Options) > 0 {
+		writeOptions(&buf, pkg.Options, false)
+		buf.WriteRune('\n')
+	}
+
 	for _, msg := range pkg.Messages {
 		writeMessage(&buf, msg)
 		buf.WriteRune('\n')
@@ -77,9 +82,20 @@ func writePackageData(buf *bytes.Buffer, pkg *Package) {
 
 func writeMessage(buf *bytes.Buffer, msg *Message) {
 	buf.WriteString(fmt.Sprintf("message %s {\n", msg.Name))
-	writeOptions(buf, msg.Options)
+	writeOptions(buf, msg.Options, true)
 
-	// TODO: Write reserved fields
+	if len(msg.Reserved) > 0 {
+		buf.WriteString("\treserved ")
+
+		for i, p := range msg.Reserved {
+			if i > 0 {
+				buf.WriteString(", ")
+			}
+			buf.WriteString(fmt.Sprint(p))
+		}
+
+		buf.WriteString(";\n")
+	}
 
 	for _, f := range msg.Fields {
 		buf.WriteRune('\t')
@@ -89,8 +105,12 @@ func writeMessage(buf *bytes.Buffer, msg *Message) {
 
 		buf.WriteString(f.Type.String())
 
-		// TODO: Write field options
-		buf.WriteString(fmt.Sprintf(" %s = %d;\n", f.Name, f.Pos))
+		buf.WriteString(fmt.Sprintf(" %s = %d", f.Name, f.Pos))
+		if len(f.Options) > 0 {
+			buf.WriteRune(' ')
+			writeFieldOptions(buf, f.Options)
+		}
+		buf.WriteString(";\n")
 	}
 
 	buf.WriteString("}\n")
@@ -98,18 +118,36 @@ func writeMessage(buf *bytes.Buffer, msg *Message) {
 
 func writeEnum(buf *bytes.Buffer, enum *Enum) {
 	buf.WriteString(fmt.Sprintf("enum %s {\n", enum.Name))
-	writeOptions(buf, enum.Options)
+	writeOptions(buf, enum.Options, true)
 
 	for _, v := range enum.Values {
-		// TODO: Write enum value options
-		buf.WriteString(fmt.Sprintf("\t%s = %d;\n", v.Name, v.Value))
+		buf.WriteString(fmt.Sprintf("\t%s = %d", v.Name, v.Value))
+		if len(v.Options) > 0 {
+			buf.WriteRune(' ')
+			writeFieldOptions(buf, v.Options)
+		}
+		buf.WriteString(";\n")
 	}
 
 	buf.WriteString("}\n")
 }
 
-func writeOptions(buf *bytes.Buffer, options Options) {
+func writeOptions(buf *bytes.Buffer, options Options, indent bool) {
 	for _, opt := range options.Sorted() {
-		buf.WriteString(fmt.Sprintf("\toption %s = %s;\n", opt.Name, opt.Value))
+		if indent {
+			buf.WriteRune('\t')
+		}
+		buf.WriteString(fmt.Sprintf("option %s = %s;\n", opt.Name, opt.Value))
 	}
+}
+
+func writeFieldOptions(buf *bytes.Buffer, options Options) {
+	buf.WriteRune('[')
+	for i, opt := range options.Sorted() {
+		if i > 0 {
+			buf.WriteString(", ")
+		}
+		buf.WriteString(fmt.Sprintf("%s = %s", opt.Name, opt.Value))
+	}
+	buf.WriteRune(']')
 }
