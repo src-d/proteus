@@ -1,6 +1,9 @@
 package scanner
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Package holds information about a single Go package and
 // a reference of all defined structs and type aliases.
@@ -12,6 +15,23 @@ type Package struct {
 	Structs  []*Struct
 	Enums    []*Enum
 	Aliases  map[string]Type
+}
+
+// collectEnums finds the enum values collected during the scan and generates
+// the corresponding enum types, removing them as aliases from the package.
+func (p *Package) collectEnums(ctx *context) {
+	for k := range p.Aliases {
+		if vals, ok := ctx.enumValues[k]; ok {
+			idx := strings.LastIndex(k, ".")
+			name := k[idx+1:]
+			if !ctx.shouldGenerateType(name) {
+				continue
+			}
+
+			p.Enums = append(p.Enums, newEnum(ctx, name, vals))
+			delete(p.Aliases, k)
+		}
+	}
 }
 
 // Type is the common interface for all possible types supported in protogo.

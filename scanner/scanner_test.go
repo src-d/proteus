@@ -20,7 +20,7 @@ func projectPath(pkg string) string {
 	return filepath.Join(gopath, "src", project, pkg)
 }
 
-func TestProcessType(t *testing.T) {
+func TestScanType(t *testing.T) {
 	cases := []struct {
 		name     string
 		typ      types.Type
@@ -80,11 +80,11 @@ func TestProcessType(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		require.Equal(t, c.expected, processType(c.typ), c.name)
+		require.Equal(t, c.expected, scanType(c.typ), c.name)
 	}
 }
 
-func TestProcessStruct(t *testing.T) {
+func TestScanStruct(t *testing.T) {
 	cases := []struct {
 		name     string
 		elem     *types.Struct
@@ -251,7 +251,7 @@ func TestProcessStruct(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		require.Equal(t, c.expected, processStruct(&Struct{}, c.elem), c.name)
+		require.Equal(t, c.expected, scanStruct(&Struct{}, c.elem), c.name)
 	}
 }
 

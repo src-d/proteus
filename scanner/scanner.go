@@ -97,7 +97,24 @@ func (s *Scanner) scanPackage(p string) (*Package, error) {
 	return buildPackage(ctx, pkg)
 }
 
-func (p *Package) processObject(ctx *context, o types.Object) {
+func buildPackage(ctx *context, gopkg *types.Package) (*Package, error) {
+	objs := objectsInScope(gopkg.Scope())
+
+	pkg := &Package{
+		Path:    removeGoPath(gopkg.Path()),
+		Name:    gopkg.Name(),
+		Aliases: make(map[string]Type),
+	}
+
+	for _, o := range objs {
+		pkg.scanObject(ctx, o)
+	}
+
+	pkg.collectEnums(ctx)
+	return pkg, nil
+}
+
+func (p *Package) scanObject(ctx *context, o types.Object) {
 	n, ok := o.Type().(*types.Named)
 	if !ok || !o.Exported() {
 		return
@@ -106,13 +123,13 @@ func (p *Package) processObject(ctx *context, o types.Object) {
 	switch o.(type) {
 	case *types.Var, *types.Const:
 		if _, ok := n.Underlying().(*types.Basic); ok {
-			processEnumValue(ctx, o.Name(), n)
+			scanEnumValue(ctx, o.Name(), n)
 		}
 		return
 	}
 
 	if s, ok := n.Underlying().(*types.Struct); ok {
-		st := processStruct(&Struct{
+		st := scanStruct(&Struct{
 			Name:     o.Name(),
 			Generate: ctx.shouldGenerateType(o.Name()),
 		}, s)
@@ -120,10 +137,10 @@ func (p *Package) processObject(ctx *context, o types.Object) {
 		return
 	}
 
-	p.Aliases[objName(n.Obj())] = processType(n.Underlying())
+	p.Aliases[objName(n.Obj())] = scanType(n.Underlying())
 }
 
-func processType(typ types.Type) (t Type) {
+func scanType(typ types.Type) (t Type) {
 	switch u := typ.(type) {
 	case *types.Named:
 		t = NewNamed(
@@ -133,16 +150,16 @@ func processType(typ types.Type) (t Type) {
 	case *types.Basic:
 		t = NewBasic(u.Name())
 	case *types.Slice:
-		t = processType(u.Elem())
+		t = scanType(u.Elem())
 		t.SetRepeated(true)
 	case *types.Array:
-		t = processType(u.Elem())
+		t = scanType(u.Elem())
 		t.SetRepeated(true)
 	case *types.Pointer:
-		t = processType(u.Elem())
+		t = scanType(u.Elem())
 	case *types.Map:
-		key := processType(u.Key())
-		val := processType(u.Elem())
+		key := scanType(u.Key())
+		val := scanType(u.Elem())
 		t = NewMap(key, val)
 	default:
 		report.Warn("ignoring type %s", typ.String())
@@ -152,12 +169,12 @@ func processType(typ types.Type) (t Type) {
 	return
 }
 
-func processEnumValue(ctx *context, name string, named *types.Named) {
+func scanEnumValue(ctx *context, name string, named *types.Named) {
 	typ := objName(named.Obj())
 	ctx.enumValues[typ] = append(ctx.enumValues[typ], name)
 }
 
-func processStruct(s *Struct, elem *types.Struct) *Struct {
+func scanStruct(s *Struct, elem *types.Struct) *Struct {
 	for i := 0; i < elem.NumFields(); i++ {
 		v := elem.Field(i)
 		tags := findProtoTags(elem.Tag(i))
@@ -181,14 +198,14 @@ func processStruct(s *Struct, elem *types.Struct) *Struct {
 			if embedded == nil {
 				report.Warn("field %q with type %q is not a valid embedded type", v.Name(), v.Type())
 			} else {
-				s = processStruct(s, embedded)
+				s = scanStruct(s, embedded)
 			}
 			continue
 		}
 
 		f := &Field{
 			Name: v.Name(),
-			Type: processType(v.Type()),
+			Type: scanType(v.Type()),
 		}
 		if f.Type == nil {
 			continue
@@ -210,21 +227,6 @@ func findStruct(t types.Type) *types.Struct {
 		return elem
 	default:
 		return nil
-	}
-}
-
-func (p *Package) collectEnums(ctx *context) {
-	for k := range p.Aliases {
-		if vals, ok := ctx.enumValues[k]; ok {
-			idx := strings.LastIndex(k, ".")
-			name := k[idx+1:]
-			if !ctx.shouldGenerateType(name) {
-				continue
-			}
-
-			p.Enums = append(p.Enums, newEnum(ctx, name, vals))
-			delete(p.Aliases, k)
-		}
 	}
 }
 
@@ -274,23 +276,6 @@ func (v enumValues) Less(i, j int) bool {
 
 func isIgnoredField(f *types.Var, tags []string) bool {
 	return !f.Exported() || (len(tags) > 0 && tags[0] == "-")
-}
-
-func buildPackage(ctx *context, gopkg *types.Package) (*Package, error) {
-	objs := objectsInScope(gopkg.Scope())
-
-	pkg := &Package{
-		Path:    removeGoPath(gopkg.Path()),
-		Name:    gopkg.Name(),
-		Aliases: make(map[string]Type),
-	}
-
-	for _, o := range objs {
-		pkg.processObject(ctx, o)
-	}
-
-	pkg.collectEnums(ctx)
-	return pkg, nil
 }
 
 func objectsInScope(scope *types.Scope) (objs []types.Object) {
