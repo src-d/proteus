@@ -7,7 +7,7 @@ import (
 
 	"github.com/src-d/proteus"
 	"github.com/src-d/proteus/report"
-	"github.com/urfave/cli"
+	"gopkg.in/urfave/cli.v1"
 )
 
 var (
