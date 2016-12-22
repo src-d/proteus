@@ -25,7 +25,7 @@ func GenerateProtos(options Options) error {
 	}
 
 	r := resolver.New()
-	r.Resolve(resolver.Packages(pkgs))
+	r.Resolve(pkgs)
 
 	t := protobuf.NewTransformer()
 	g := protobuf.NewGenerator(options.BasePath)

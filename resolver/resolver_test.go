@@ -13,15 +13,15 @@ import (
 const project = "github.com/src-d/proteus"
 
 func TestPackagesEnums(t *testing.T) {
-	packages := Packages{
-		&scanner.Package{
+	packages := []*scanner.Package{
+		{
 			Path: "foo",
 			Enums: []*scanner.Enum{
 				enum("Foo", "A", "B", "C"),
 				enum("Bar", "D", "E"),
 			},
 		},
-		&scanner.Package{
+		{
 			Path: "bar",
 			Enums: []*scanner.Enum{
 				enum("Cmp", "Lt", "Eq", "Gt"),
@@ -29,14 +29,14 @@ func TestPackagesEnums(t *testing.T) {
 		},
 	}
 
-	enumSet := packages.Enums()
+	enumSet := packagesEnums(packages)
 	require.Equal(t, 3, len(enumSet), "enums size")
 	assertStrSet(t, enumSet, "bar.Cmp", "foo.Bar", "foo.Foo")
 }
 
 func TestGetPackagesInfo(t *testing.T) {
-	packages := Packages{
-		&scanner.Package{
+	packages := []*scanner.Package{
+		{
 			Path: "foo",
 			Aliases: map[string]scanner.Type{
 				"foo.Foo": scanner.NewBasic("int"),
@@ -48,7 +48,7 @@ func TestGetPackagesInfo(t *testing.T) {
 				enum("Bar", "D", "E"),
 			},
 		},
-		&scanner.Package{
+		{
 			Path: "bar",
 			Aliases: map[string]scanner.Type{
 				"bar.Cmp": scanner.NewBasic("int"),
@@ -60,15 +60,15 @@ func TestGetPackagesInfo(t *testing.T) {
 		},
 	}
 
-	info := packages.Info()
-	require.Equal(t, 2, len(info.Packages))
-	assertStrSet(t, info.Packages, "bar", "foo")
+	info := getPackagesInfo(packages)
+	require.Equal(t, 2, len(info.packages))
+	assertStrSet(t, info.packages, "bar", "foo")
 
-	require.Equal(t, 2, len(info.Aliases))
-	_, ok := info.Aliases["foo.Baz"]
+	require.Equal(t, 2, len(info.aliases))
+	_, ok := info.aliases["foo.Baz"]
 	require.True(t, ok)
 
-	_, ok = info.Aliases["bar.Qux"]
+	_, ok = info.aliases["bar.Qux"]
 	require.True(t, ok)
 }
 
@@ -108,11 +108,14 @@ func (s *ResolverSuite) TestResolve() {
 	pkgs, err := sc.Scan()
 	s.Nil(err)
 
-	s.r.Resolve(Packages(pkgs))
+	s.Equal(2, len(pkgs[1].Structs), "num of structs in subpkg")
+	s.r.Resolve(pkgs)
 
 	pkg := pkgs[0]
 	s.assertStruct(pkg.Structs[0], "Bar", "Bar", "Baz")
 	s.assertStruct(pkg.Structs[1], "Foo", "Bar", "Baz", "IntList", "IntArray", "Map", "Timestamp", "Duration", "Aliased")
+	// Qux is not opted-in, but is required by Foo, so should be here
+	s.assertStruct(pkg.Structs[2], "Qux", "A", "B")
 
 	foo := pkg.Structs[1]
 	aliasedType := foo.Fields[len(foo.Fields)-1].Type
@@ -120,6 +123,8 @@ func (s *ResolverSuite) TestResolve() {
 	basic, ok := aliasedType.(*scanner.Basic)
 	s.True(ok, "Aliased should be a basic type")
 	s.Equal("int", basic.Name)
+
+	s.Equal(1, len(pkgs[1].Structs), "a struct of subpkg should have been removed")
 }
 
 func (s *ResolverSuite) assertStruct(st *scanner.Struct, name string, fields ...string) {
