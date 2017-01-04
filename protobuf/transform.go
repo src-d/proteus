@@ -239,9 +239,10 @@ func (t *Transformer) findMapping(name string) *ProtoType {
 
 func removeLastError(types []scanner.Type) ([]scanner.Type, bool) {
 	if len(types) > 0 {
-		last := types[len(types)-1]
+		ln := len(types)
+		last := types[ln-1]
 		if isError(last) {
-			return types[:len(types)-1], true
+			return types[:ln-1], true
 		}
 	}
 

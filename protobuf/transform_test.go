@@ -300,7 +300,6 @@ func (s *TransformerSuite) TestTransformFuncEmpty() {
 	s.Equal(fn.Name, rpc.Name)
 	s.Equal(NewGeneratedNamed("baz", "DoFooRequest"), rpc.Input)
 	s.Equal(NewGeneratedNamed("baz", "DoFooResponse"), rpc.Output)
-
 	s.Equal(2, len(pkg.Messages), "two messages should have been created")
 	msg := pkg.Messages[0]
 	s.Equal("DoFooRequest", msg.Name)
