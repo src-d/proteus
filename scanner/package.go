@@ -150,4 +150,6 @@ type Func struct {
 	Receiver Type
 	Input    []Type
 	Output   []Type
+	// IsVariadic will be true if the last input parameter is variadic.
+	IsVariadic bool
 }
