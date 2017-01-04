@@ -137,6 +137,34 @@ func (s *GenSuite) TestWriteMessage() {
 	s.Equal(expectedMsg, s.buf.String())
 }
 
+var mockRpcs = []*RPC{
+	{
+		Name:   "DoFoo",
+		Input:  NewNamed("foo.bar", "DoFooRequest"),
+		Output: NewNamed("foo.bar", "DoFooResponse"),
+	},
+	{
+		Name:   "DoBar",
+		Input:  NewNamed("foo.bar", "DoBarRequest"),
+		Output: NewNamed("foo.bar", "DoBarResponse"),
+	},
+}
+
+const expectedService = `service BarService {
+	DoFoo (foo.bar.DoFooRequest) returns (foo.bar.DoFooResponse);
+	DoBar (foo.bar.DoBarRequest) returns (foo.bar.DoBarResponse);
+}
+
+`
+
+func (s *GenSuite) TestWriteService() {
+	writeService(s.buf, &Package{
+		Name: "foo.bar",
+		RPCs: mockRpcs,
+	})
+	s.Equal(expectedService, s.buf.String())
+}
+
 var expectedProto = fmt.Sprintf(`syntax = "proto3";
 package foo.bar;
 
@@ -146,7 +174,7 @@ option foo = true;
 
 %s
 %s
-`, expectedMsg, expectedEnum)
+%s`, expectedMsg, expectedEnum, expectedService)
 
 func (s *GenSuite) TestGenerate() {
 	err := s.g.Generate(&Package{
@@ -155,6 +183,7 @@ func (s *GenSuite) TestGenerate() {
 		Messages: []*Message{mockMsg},
 		Enums:    []*Enum{mockEnum},
 		Options:  Options{"foo": NewLiteralValue("true")},
+		RPCs:     mockRpcs,
 	})
 	s.Nil(err)
 

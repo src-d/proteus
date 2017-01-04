@@ -14,6 +14,7 @@ type Package struct {
 	Options  Options
 	Messages []*Message
 	Enums    []*Enum
+	RPCs     []*RPC
 }
 
 // Import tries to import the given protobuf type to the current package.
@@ -210,5 +211,13 @@ func (v *EnumValues) Add(name string, val uint, options Options) {
 type EnumValue struct {
 	Name    string
 	Value   uint
+	Options Options
+}
+
+// RPC is a single exposed RPC method in the RPC service.
+type RPC struct {
+	Name    string
+	Input   Type
+	Output  Type
 	Options Options
 }

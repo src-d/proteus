@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/src-d/proteus/report"
 )
@@ -41,6 +42,10 @@ func (g *Generator) Generate(pkg *Package) error {
 	for _, enum := range pkg.Enums {
 		writeEnum(&buf, enum)
 		buf.WriteRune('\n')
+	}
+
+	if len(pkg.RPCs) > 0 {
+		writeService(&buf, pkg)
 	}
 
 	return g.writeFile(pkg.Path, buf.Bytes())
@@ -150,4 +155,23 @@ func writeFieldOptions(buf *bytes.Buffer, options Options) {
 		buf.WriteString(fmt.Sprintf("%s = %s", opt.Name, opt.Value))
 	}
 	buf.WriteRune(']')
+}
+
+func writeService(buf *bytes.Buffer, pkg *Package) {
+	buf.WriteString(fmt.Sprintf("service %s {\n", pkgToServiceName(pkg.Name)))
+	for _, rpc := range pkg.RPCs {
+		buf.WriteString(fmt.Sprintf(
+			"\t%s (%s) returns (%s);\n",
+			rpc.Name,
+			rpc.Input,
+			rpc.Output,
+		))
+	}
+	buf.WriteString("}\n\n")
+}
+
+func pkgToServiceName(pkg string) string {
+	parts := strings.Split(pkg, ".")
+	last := parts[len(parts)-1]
+	return strings.ToUpper(string(last[0])) + last[1:] + "Service"
 }
