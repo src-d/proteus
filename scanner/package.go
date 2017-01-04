@@ -14,6 +14,7 @@ type Package struct {
 	Name     string
 	Structs  []*Struct
 	Enums    []*Enum
+	Funcs    []*Func
 	Aliases  map[string]Type
 }
 
@@ -139,4 +140,14 @@ func (s *Struct) HasField(name string) bool {
 type Field struct {
 	Name string
 	Type Type
+}
+
+// Func is either a function or a method. Receiver will be nil in functions,
+// otherwise it is a method.
+type Func struct {
+	Name string
+	// Receiver will not be nil if it's a method.
+	Receiver Type
+	Input    []Type
+	Output   []Type
 }
