@@ -108,7 +108,7 @@ func (s *ResolverSuite) TestResolve() {
 	pkgs, err := sc.Scan()
 	s.Nil(err)
 
-	s.Equal(2, len(pkgs[1].Structs), "num of structs in subpkg")
+	s.Equal(2, len(pkgs[1].Structs), "num of structs in pkg")
 	s.r.Resolve(pkgs)
 
 	pkg := pkgs[0]
@@ -116,6 +116,8 @@ func (s *ResolverSuite) TestResolve() {
 	s.assertStruct(pkg.Structs[1], "Foo", "Bar", "Baz", "IntList", "IntArray", "Map", "Timestamp", "Duration", "Aliased")
 	// Qux is not opted-in, but is required by Foo, so should be here
 	s.assertStruct(pkg.Structs[2], "Qux", "A", "B")
+
+	s.Equal(0, len(pkg.Funcs), "num of funcs in pkg")
 
 	foo := pkg.Structs[1]
 	aliasedType := foo.Fields[len(foo.Fields)-1].Type
@@ -125,6 +127,40 @@ func (s *ResolverSuite) TestResolve() {
 	s.Equal("int", basic.Name)
 
 	s.Equal(1, len(pkgs[1].Structs), "a struct of subpkg should have been removed")
+	s.Equal(3, len(pkgs[1].Funcs), "num of funcs in subpkg")
+
+	s.Equal(&scanner.Func{
+		Name: "Generated",
+		Input: []scanner.Type{
+			scanner.NewBasic("string"),
+		},
+		Output: []scanner.Type{
+			scanner.NewBasic("bool"),
+			scanner.NewNamed("", "error"),
+		},
+	}, pkgs[1].Funcs[0])
+
+	s.Equal(&scanner.Func{
+		Name: "GeneratedMethod",
+		Input: []scanner.Type{
+			scanner.NewBasic("int32"),
+		},
+		Output: []scanner.Type{
+			scanner.NewNamed(projectPath("fixtures/subpkg"), "Point"),
+		},
+		Receiver: scanner.NewNamed(projectPath("fixtures/subpkg"), "Point"),
+	}, pkgs[1].Funcs[1])
+
+	s.Equal(&scanner.Func{
+		Name: "GeneratedMethodOnPointer",
+		Input: []scanner.Type{
+			scanner.NewBasic("bool"),
+		},
+		Output: []scanner.Type{
+			scanner.NewNamed(projectPath("fixtures/subpkg"), "Point"),
+		},
+		Receiver: scanner.NewNamed(projectPath("fixtures/subpkg"), "Point"),
+	}, pkgs[1].Funcs[2])
 }
 
 func (s *ResolverSuite) assertStruct(st *scanner.Struct, name string, fields ...string) {

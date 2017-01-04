@@ -84,6 +84,9 @@ type Named struct {
 }
 
 func (n Named) String() string {
+	if n.Path == "" {
+		return n.Name
+	}
 	return fmt.Sprintf("%s.%s", n.Path, n.Name)
 }
 
