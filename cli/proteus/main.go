@@ -20,16 +20,12 @@ func main() {
 	app := cli.NewApp()
 	app.Description = "Generate .proto files from your Go packages."
 	app.Version = "0.9.0"
-	app.Flags = []cli.Flag{
+
+	baseFlags := []cli.Flag{
 		cli.StringSliceFlag{
 			Name:  "pkg, p",
-			Usage: "Generate a .proto file for `PACKAGE`. You can use this flag multiple times to specify more than one package.",
+			Usage: "Use `PACKAGE` as input for the generation. You can use this flag multiple times to specify more than one package.",
 			Value: &packages,
-		},
-		cli.StringFlag{
-			Name:        "folder, f",
-			Usage:       "All generated .proto files will be written to `FOLDER`.",
-			Destination: &path,
 		},
 		cli.BoolFlag{
 			Name:        "verbose",
@@ -38,11 +34,45 @@ func main() {
 		},
 	}
 
-	app.Action = action
+	app.Commands = []cli.Command{
+		{
+			Name:   "proto",
+			Usage:  "Generates .proto files from Go packages",
+			Action: initCmd(genProtos),
+			Flags: append(baseFlags, cli.StringFlag{
+				Name:        "folder, f",
+				Usage:       "All generated .proto files will be written to `FOLDER`.",
+				Destination: &path,
+			}),
+		},
+		{
+			Name:   "rpc",
+			Usage:  "Generates gRPC server implementation",
+			Action: initCmd(genRPCServer),
+			Flags:  baseFlags,
+		},
+	}
+
 	app.Run(os.Args)
 }
 
-func action(c *cli.Context) error {
+type action func(c *cli.Context) error
+
+func initCmd(next action) func(c *cli.Context) error {
+	return func(c *cli.Context) error {
+		if len(packages) == 0 {
+			return errors.New("no package provided, there is nothing to generate")
+		}
+
+		if !verbose {
+			report.Silent()
+		}
+
+		return next(c)
+	}
+}
+
+func genProtos(c *cli.Context) error {
 	if path == "" {
 		return errors.New("destination path cannot be empty")
 	}
@@ -51,18 +81,14 @@ func action(c *cli.Context) error {
 		return err
 	}
 
-	if len(packages) == 0 {
-		return errors.New("no package provided, there is nothing to generate")
-	}
-
-	if !verbose {
-		report.Silent()
-	}
-
 	return proteus.GenerateProtos(proteus.Options{
 		BasePath: path,
 		Packages: packages,
 	})
+}
+
+func genRPCServer(c *cli.Context) error {
+	return proteus.GenerateRPCServer(packages)
 }
 
 func checkFolder(p string) error {

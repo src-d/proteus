@@ -10,10 +10,15 @@
 //
 //	go get -v github.com/src-d/proteus/...
 //
-// Usage
+// Generate proto files
 //
-//	proteus -f /path/to/output/folder \
+//	proteus proto -f /path/to/output/folder \
 //        -p my/go/package \
 //        -p my/other/go/package
 //        --verbose
+//
+// Generate RPC server implementation
+//
+//  proteus rpc -p my/go/package \
+//		  -p my/other/go/package
 package proteus

@@ -43,7 +43,7 @@ func (p *Package) isImported(file string) bool {
 	return false
 }
 
-// ServiceName returns the RPC service name of the package.
+// ServiceName returns the service name of the package.
 func (p *Package) ServiceName() string {
 	parts := strings.Split(p.Name, ".")
 	last := parts[len(parts)-1]
@@ -238,7 +238,7 @@ type RPC struct {
 	Recv string
 	// Method is the name of the Go method or function.
 	Method string
-	// HasError repors whether the Go function returns an error.
+	// HasError reports whether the Go function returns an error.
 	HasError bool
 	// IsVariadic reports whether the Go function is variadic or not.
 	IsVariadic bool

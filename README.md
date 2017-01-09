@@ -21,10 +21,17 @@ go get -v github.com/src-d/proteus/...
 Proto files can be generated using the command line tool provided with proteus.
 
 ```bash
-proteus -f /path/to/output/folder \
+proteus proto -f /path/to/output/folder \
         -p my/go/package \
         -p my/other/go/package
         --verbose
+```
+
+You can also generate gRPC server implementations for your packages.
+
+```bash
+proteus rpc -p my/go/package \
+        -p my/other/go/package
 ```
 
 **NOTE:** Of course, if the defaults don't suit your needs, until proteus is extensible via plugins, you can hack together your own generator command using the provided components. Check out the [godoc documentation of the package](http://godoc.org/github.com/src-d/proteus).
@@ -152,6 +159,95 @@ const (
 ```
 
 Instead of doing an enumeration, consider not exporting the type and instead it will be treated as an alias of `int32` in protobuf, which is the default behaviour for not exported types.
+
+### Generate services
+
+For every package, a single service is generated with all the methods or functions having `//proteus:generate`.
+
+For example, if you have the following package:
+
+```go
+package users
+
+//proteus:generate
+func GetUser(id uint64) (*User, error) {
+        // impl
+}
+
+//proteus:generate
+func (s *UserStore) UpdateUser(u *User) error {
+        // impl
+}
+```
+
+The following protobuf service would be generated:
+
+```proto
+message GetUserRequest {
+        uint64 arg1 = 1;
+}
+
+message UserStore_UpdateUserResponse {
+}
+
+service UsersService {
+        rpc GetUser(users.GetUserRequest) returns (users.User);
+        rpc UserStore_UpdateUser(users.User) returns (users.UserStore_UpdateUserResponse);
+}
+```
+
+Note that protobuf does not support input or output types that are not messages or empty input/output, so instead of returning nothing in `UserStore_UpdateUser` it returns a message with no fields, and instead of receiving an integer in `GetUser`, receives a message with only one integer field.
+The last `error` type is ignored.
+
+### Generate RPC server implementation
+
+`gogo/protobuf` generates the interface you need to implement based on your `.proto` file. The problem with that is that you actually have to implement that and maintain it. Instead, you can just generate it automatically with proteus.
+
+Consider the Go code of the previous section, we could generate the implementation of that service.
+
+Something like this would be generated:
+
+```
+type usersServiceServer struct {
+}
+
+func NewUsersServiceServer() *usersServiceServer {
+        return &usersServiceServer{}
+}
+
+func (s *userServiceServer) GetUser(ctx context.Context, in *GetUserRequest) (result *User, err error) {
+        result = GetUser(in.Arg1)
+        return
+}
+
+func (s *userServiceServer) UserStore_UpdateUser(ctx context.Context, in *User) (result *UserStore_UpdateUser, err error) {
+        s.UserStore.UpdateUser(in)
+        return
+}
+```
+
+There are 3 interesting things in the generated code that, of course, would not work:
+- `usersServiceServer` is a generated empty struct.
+- `NewUsersServiceServer` is a generated constructor for `usersServiceServer`.
+- `UserStore_UpdateUser` uses the field `UserStore` of `userServiceServer` that, indeed, does not exist.
+
+The server struct and its constructor are always generated empty **but only if they don't exist already**. That means that you can, and should, implement them yourself to make this code work.
+
+For every method you are using, you are supposed to implement a receiver in the server type and initialize it however you want in the constructor. How would we fix this?
+
+```go
+type userServiceServer struct {
+        UserStore *UserStore
+}
+
+func NewUserServiceServer() *userServiceServer {
+        return &userServiceServer{
+                UserStore: NewUserStore(),
+        }
+}
+```
+
+Now if we generate the code again, the server struct and the constructor are implemented and the defaults will not be added again. Also, `UserStore_UpdateUser` would be able to find the field `UserStore` in `userServiceServer` and the code would work.
 
 ### Not scanned types
 
