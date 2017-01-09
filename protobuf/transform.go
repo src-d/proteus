@@ -69,7 +69,11 @@ func (t *Transformer) Transform(p *scanner.Package) *Package {
 }
 
 func (t *Transformer) transformFunc(pkg *Package, f *scanner.Func, names nameSet) *RPC {
-	name := f.Name
+	var (
+		name         = f.Name
+		receiverName string
+	)
+
 	if f.Receiver != nil {
 		n, ok := f.Receiver.(*scanner.Named)
 		if !ok {
@@ -78,12 +82,18 @@ func (t *Transformer) transformFunc(pkg *Package, f *scanner.Func, names nameSet
 		}
 
 		name = fmt.Sprintf("%s_%s", n.Name, name)
+		receiverName = n.Name
 	}
 
+	output, hasError := removeLastError(f.Output)
 	rpc := &RPC{
-		Name:   name,
-		Input:  t.transformInputTypes(pkg, f.Input, names, name),
-		Output: t.transformOutputTypes(pkg, f.Output, names, name),
+		Name:       name,
+		Recv:       receiverName,
+		Method:     f.Name,
+		HasError:   hasError,
+		IsVariadic: f.IsVariadic,
+		Input:      t.transformInputTypes(pkg, f.Input, names, name),
+		Output:     t.transformOutputTypes(pkg, output, names, name),
 	}
 	if rpc.Input == nil || rpc.Output == nil {
 		return nil
@@ -97,7 +107,7 @@ func (t *Transformer) transformInputTypes(pkg *Package, types []scanner.Type, na
 }
 
 func (t *Transformer) transformOutputTypes(pkg *Package, types []scanner.Type, names nameSet, name string) Type {
-	return t.transformTypeList(pkg, removeLastError(types), names, name, "Response", "result")
+	return t.transformTypeList(pkg, types, names, name, "Response", "result")
 }
 
 func (t *Transformer) transformTypeList(pkg *Package, types []scanner.Type, names nameSet, name, msgNameSuffix, msgFieldPrefix string) Type {
@@ -114,7 +124,7 @@ func (t *Transformer) transformTypeList(pkg *Package, types []scanner.Type, name
 
 		msg := t.createMessageFromTypes(pkg, msgName, types, msgFieldPrefix)
 		pkg.Messages = append(pkg.Messages, msg)
-		return NewNamed(toProtobufPkg(pkg.Path), msgName)
+		return NewGeneratedNamed(toProtobufPkg(pkg.Path), msgName)
 	}
 
 	return t.transformType(pkg, types[0])
@@ -227,15 +237,15 @@ func (t *Transformer) findMapping(name string) *ProtoType {
 	return typ
 }
 
-func removeLastError(types []scanner.Type) []scanner.Type {
+func removeLastError(types []scanner.Type) ([]scanner.Type, bool) {
 	if len(types) > 0 {
 		last := types[len(types)-1]
 		if isError(last) {
-			return types[:len(types)-1]
+			return types[:len(types)-1], true
 		}
 	}
 
-	return types
+	return types, false
 }
 
 func isNamed(typ scanner.Type) bool {

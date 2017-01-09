@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/src-d/proteus/report"
 )
@@ -158,7 +157,7 @@ func writeFieldOptions(buf *bytes.Buffer, options Options) {
 }
 
 func writeService(buf *bytes.Buffer, pkg *Package) {
-	buf.WriteString(fmt.Sprintf("service %s {\n", pkgToServiceName(pkg.Name)))
+	buf.WriteString(fmt.Sprintf("service %s {\n", pkg.ServiceName()))
 	for _, rpc := range pkg.RPCs {
 		buf.WriteString(fmt.Sprintf(
 			"\t%s (%s) returns (%s);\n",
@@ -168,10 +167,4 @@ func writeService(buf *bytes.Buffer, pkg *Package) {
 		))
 	}
 	buf.WriteString("}\n\n")
-}
-
-func pkgToServiceName(pkg string) string {
-	parts := strings.Split(pkg, ".")
-	last := parts[len(parts)-1]
-	return strings.ToUpper(string(last[0])) + last[1:] + "Service"
 }

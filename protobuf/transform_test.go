@@ -238,8 +238,8 @@ func (s *TransformerSuite) TestTransformFuncMultiple() {
 
 	s.NotNil(rpc)
 	s.Equal(fn.Name, rpc.Name)
-	s.Equal(NewNamed("baz", "DoFooRequest"), rpc.Input)
-	s.Equal(NewNamed("baz", "DoFooResponse"), rpc.Output)
+	s.Equal(NewGeneratedNamed("baz", "DoFooRequest"), rpc.Input)
+	s.Equal(NewGeneratedNamed("baz", "DoFooResponse"), rpc.Output)
 
 	s.Equal(2, len(pkg.Messages), "two messages should have been created")
 	msg := pkg.Messages[0]
@@ -298,9 +298,8 @@ func (s *TransformerSuite) TestTransformFuncEmpty() {
 
 	s.NotNil(rpc)
 	s.Equal(fn.Name, rpc.Name)
-	s.Equal(NewNamed("baz", "DoFooRequest"), rpc.Input)
-	s.Equal(NewNamed("baz", "DoFooResponse"), rpc.Output)
-
+	s.Equal(NewGeneratedNamed("baz", "DoFooRequest"), rpc.Input)
+	s.Equal(NewGeneratedNamed("baz", "DoFooResponse"), rpc.Output)
 	s.Equal(2, len(pkg.Messages), "two messages should have been created")
 	msg := pkg.Messages[0]
 	s.Equal("DoFooRequest", msg.Name)
@@ -327,8 +326,8 @@ func (s *TransformerSuite) TestTransformFunc1BasicArg() {
 
 	s.NotNil(rpc)
 	s.Equal(fn.Name, rpc.Name)
-	s.Equal(NewNamed("", "DoFooRequest"), rpc.Input)
-	s.Equal(NewNamed("", "DoFooResponse"), rpc.Output)
+	s.Equal(NewGeneratedNamed("", "DoFooRequest"), rpc.Input)
+	s.Equal(NewGeneratedNamed("", "DoFooResponse"), rpc.Output)
 
 	s.Equal(2, len(pkg.Messages), "two messages should have been created")
 	msg := pkg.Messages[0]
@@ -397,8 +396,8 @@ func (s *TransformerSuite) TestTransformFuncRepeatedSingle() {
 
 	s.NotNil(rpc)
 	s.Equal(fn.Name, rpc.Name)
-	s.Equal(rpc.Input, NewNamed("", "DoFooRequest"))
-	s.Equal(rpc.Output, NewNamed("", "DoFooResponse"))
+	s.Equal(rpc.Input, NewGeneratedNamed("", "DoFooRequest"))
+	s.Equal(rpc.Output, NewGeneratedNamed("", "DoFooResponse"))
 
 	s.Equal(2, len(pkg.Messages), "two messages should have been created")
 	msg := pkg.Messages[0]

@@ -11,13 +11,16 @@ import (
 	"sync"
 
 	"github.com/src-d/proteus/report"
+	"github.com/src-d/proteus/source"
 )
+
+var goPath = os.Getenv("GOPATH")
 
 // Scanner scans packages looking for Go source files to parse
 // and extract types and structs from.
 type Scanner struct {
 	packages []string
-	importer *Importer
+	importer *source.Importer
 }
 
 // ErrNoGoPathSet is the error returned when the GOPATH variable is not
@@ -44,7 +47,7 @@ func New(packages ...string) (*Scanner, error) {
 
 	return &Scanner{
 		packages: packages,
-		importer: NewImporter(),
+		importer: source.NewImporter(),
 	}, nil
 }
 

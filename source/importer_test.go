@@ -1,4 +1,4 @@
-package scanner
+package source
 
 import (
 	"path/filepath"
@@ -6,6 +6,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
+
+const project = "github.com/src-d/proteus"
+
+func projectPath(pkg string) string {
+	return filepath.Join(goPath, "src", project, pkg)
+}
 
 func TestGetSourceFiles(t *testing.T) {
 	_, paths, err := NewImporter().getSourceFiles(filepath.Join(project, "fixtures"), goPath)
