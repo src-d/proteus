@@ -6,6 +6,7 @@ import "google/protobuf/timestamp.proto";
 option go_package = "example";
 
 message Category {
+	option (gogoproto.drop_type_declaration) = true;
 	int64 id = 1;
 	google.protobuf.Timestamp created_at = 2;
 	google.protobuf.Timestamp updated_at = 3;
@@ -17,11 +18,13 @@ message Category {
 }
 
 message CategoryOptions {
+	option (gogoproto.drop_type_declaration) = true;
 	bool show_prices = 1;
 	bool can_buy = 2;
 }
 
 message Product {
+	option (gogoproto.drop_type_declaration) = true;
 	int64 id = 1;
 	google.protobuf.Timestamp created_at = 2;
 	google.protobuf.Timestamp updated_at = 3;
@@ -33,6 +36,7 @@ message Product {
 }
 
 enum Type {
+	option (gogoproto.enum_drop_type_declaration) = true;
 	PUBLIC = 0;
 	PRIVATE = 1;
 	CUSTOM = 2;
