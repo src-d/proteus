@@ -41,8 +41,9 @@ func (t *Transformer) SetMappings(m TypeMappings) {
 // Transform converts a scanned package to a protobuf package.
 func (t *Transformer) Transform(p *scanner.Package) *Package {
 	pkg := &Package{
-		Name: toProtobufPkg(p.Path),
-		Path: p.Path,
+		Name:    toProtobufPkg(p.Path),
+		Path:    p.Path,
+		Options: defaultOptionsForPackage(p),
 	}
 
 	for _, s := range p.Structs {
@@ -188,4 +189,9 @@ func toLowerSnakeCase(s string) string {
 
 func toUpperSnakeCase(s string) string {
 	return strings.ToUpper(toLowerSnakeCase(s))
+}
+func defaultOptionsForPackage(p *scanner.Package) Options {
+	return Options{
+		"go_package": NewStringValue(p.Name),
+	}
 }

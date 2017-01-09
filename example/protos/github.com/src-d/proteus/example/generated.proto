@@ -3,6 +3,8 @@ package github.com.srcd.proteus.example;
 
 import "google/protobuf/timestamp.proto";
 
+option go_package = "example";
+
 message Category {
 	int64 id = 1;
 	google.protobuf.Timestamp created_at = 2;

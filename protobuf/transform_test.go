@@ -239,6 +239,7 @@ func (s *TransformerSuite) TestTransform() {
 
 	s.Equal("github.com.srcd.proteus.fixtures", pkg.Name)
 	s.Equal("github.com/src-d/proteus/fixtures", pkg.Path)
+	s.Equal(NewStringValue("foo"), pkg.Options["go_package"])
 	s.Equal([]string{
 		"google/protobuf/timestamp.proto",
 		"github.com/src-d/proteus/fixtures/subpkg/generated.proto",
@@ -249,6 +250,7 @@ func (s *TransformerSuite) TestTransform() {
 	pkg = s.t.Transform(pkgs[1])
 	s.Equal("github.com.srcd.proteus.fixtures.subpkg", pkg.Name)
 	s.Equal("github.com/src-d/proteus/fixtures/subpkg", pkg.Path)
+	s.Equal(NewStringValue("subpkg"), pkg.Options["go_package"])
 	s.Equal([]string(nil), pkg.Imports)
 	s.Equal(0, len(pkg.Enums))
 	s.Equal(1, len(pkg.Messages))
