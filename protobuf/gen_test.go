@@ -151,8 +151,8 @@ var mockRpcs = []*RPC{
 }
 
 const expectedService = `service BarService {
-	DoFoo (foo.bar.DoFooRequest) returns (foo.bar.DoFooResponse);
-	DoBar (foo.bar.DoBarRequest) returns (foo.bar.DoBarResponse);
+	rpc DoFoo (foo.bar.DoFooRequest) returns (foo.bar.DoFooResponse);
+	rpc DoBar (foo.bar.DoBarRequest) returns (foo.bar.DoBarResponse);
 }
 
 `

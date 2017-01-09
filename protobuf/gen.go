@@ -160,7 +160,7 @@ func writeService(buf *bytes.Buffer, pkg *Package) {
 	buf.WriteString(fmt.Sprintf("service %s {\n", pkg.ServiceName()))
 	for _, rpc := range pkg.RPCs {
 		buf.WriteString(fmt.Sprintf(
-			"\t%s (%s) returns (%s);\n",
+			"\trpc %s (%s) returns (%s);\n",
 			rpc.Name,
 			rpc.Input,
 			rpc.Output,

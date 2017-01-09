@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 
 	"github.com/src-d/proteus"
 	"github.com/src-d/proteus/report"
@@ -34,16 +36,19 @@ func main() {
 		},
 	}
 
+	folderFlag := cli.StringFlag{
+		Name:        "folder, f",
+		Usage:       "All generated .proto files will be written to `FOLDER`.",
+		Destination: &path,
+	}
+
+	app.Flags = append(baseFlags, folderFlag)
 	app.Commands = []cli.Command{
 		{
 			Name:   "proto",
 			Usage:  "Generates .proto files from Go packages",
 			Action: initCmd(genProtos),
-			Flags: append(baseFlags, cli.StringFlag{
-				Name:        "folder, f",
-				Usage:       "All generated .proto files will be written to `FOLDER`.",
-				Destination: &path,
-			}),
+			Flags:  append(baseFlags, folderFlag),
 		},
 		{
 			Name:   "rpc",
@@ -52,6 +57,7 @@ func main() {
 			Flags:  baseFlags,
 		},
 	}
+	app.Action = initCmd(genAll)
 
 	app.Run(os.Args)
 }
@@ -89,6 +95,48 @@ func genProtos(c *cli.Context) error {
 
 func genRPCServer(c *cli.Context) error {
 	return proteus.GenerateRPCServer(packages)
+}
+
+var (
+	goSrc       = filepath.Join(os.Getenv("GOPATH"), "src")
+	protobufSrc = filepath.Join(goSrc, "github.com", "src-d", "protobuf")
+)
+
+func genAll(c *cli.Context) error {
+	protocPath, err := exec.LookPath("protoc")
+	if err != nil {
+		return fmt.Errorf("protoc is not installed: %s", err)
+	}
+
+	if err := checkFolder(protobufSrc); err != nil {
+		return fmt.Errorf("github.com/src-d/protobuf is not installed")
+	}
+
+	if err := genProtos(c); err != nil {
+		return err
+	}
+
+	for _, p := range packages {
+		outPath := filepath.Join(goSrc, p)
+		proto := filepath.Join(path, p, "generated.proto")
+		cmd := exec.Command(protocPath,
+			fmt.Sprintf(
+				"--proto_path=%s:%s:%s:.",
+				goSrc,
+				filepath.Join(protobufSrc, "protobuf"),
+				filepath.Join(path, p),
+			),
+			fmt.Sprintf("--gofast_out=plugins=grpc:%s", outPath),
+			proto,
+		)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("error generating Go files from %q: %s", proto, err)
+		}
+	}
+
+	return genRPCServer(c)
 }
 
 func checkFolder(p string) error {
