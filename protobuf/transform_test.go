@@ -169,17 +169,22 @@ func (s *TransformerSuite) TestTransformField() {
 		{
 			"Foo",
 			scanner.NewBasic("int"),
-			&Field{Name: "foo", Type: NewBasic("int32")},
+			&Field{Name: "foo", Type: NewBasic("int32"), Options: make(Options)},
 		},
 		{
 			"Bar",
 			repeated(scanner.NewBasic("byte")),
-			&Field{Name: "bar", Type: NewBasic("bytes")},
+			&Field{Name: "bar", Type: NewBasic("bytes"), Options: make(Options)},
 		},
 		{
 			"BazBar",
 			repeated(scanner.NewBasic("int")),
-			&Field{Name: "baz_bar", Type: NewBasic("int32"), Repeated: true},
+			&Field{Name: "baz_bar", Type: NewBasic("int32"), Repeated: true, Options: make(Options)},
+		},
+		{
+			"CustomID",
+			scanner.NewBasic("int"),
+			&Field{Name: "custom_id", Type: NewBasic("int32"), Options: Options{"(gogoproto.customname)": NewStringValue("CustomID")}},
 		},
 		{
 			"Invalid",
@@ -216,6 +221,7 @@ func (s *TransformerSuite) TestTransformStruct() {
 	s.Equal("Foo", msg.Name)
 	s.Equal(1, len(msg.Fields), "should have one field")
 	s.Equal(2, msg.Fields[0].Pos)
+	s.Equal(0, len(msg.Fields[0].Options))
 	s.Equal(1, len(msg.Reserved), "should have reserved field")
 	s.Equal(uint(1), msg.Reserved[0])
 	s.Equal(NewLiteralValue("true"), msg.Options["(gogoproto.drop_type_declaration)"], "should drop declaration by default")

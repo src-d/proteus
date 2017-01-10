@@ -10,6 +10,8 @@ import (
 	"golang.org/x/text/transform"
 	"golang.org/x/text/unicode/norm"
 
+	"github.com/src-d/protobuf/protoc-gen-gogo/generator"
+
 	"github.com/src-d/proteus/report"
 	"github.com/src-d/proteus/scanner"
 )
@@ -208,10 +210,20 @@ func (t *Transformer) transformField(pkg *Package, field *scanner.Field, pos int
 
 	return &Field{
 		Name:     toLowerSnakeCase(field.Name),
+		Options:  defaultOptionsForStructField(field),
 		Pos:      pos,
 		Type:     typ,
 		Repeated: repeated,
 	}
+}
+
+func defaultOptionsForStructField(field *scanner.Field) Options {
+	opts := make(Options)
+	if generator.CamelCase(toLowerSnakeCase(field.Name)) != field.Name {
+		opts["(gogoproto.customname)"] = NewStringValue(field.Name)
+	}
+
+	return opts
 }
 
 func (t *Transformer) transformType(pkg *Package, typ scanner.Type) Type {

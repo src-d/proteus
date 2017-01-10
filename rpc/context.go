@@ -50,14 +50,26 @@ func (c *context) argumentType(rpc *protobuf.RPC) string {
 	signature := c.findSignature(rpc)
 	obj := firstTypeName(signature.Params())
 	c.addImport(obj.Pkg().Path())
-	return fmt.Sprintf("%s.%s", obj.Pkg().Name(), obj.Name())
+
+	return c.objectNameInContext(obj)
 }
 
 func (c *context) returnType(rpc *protobuf.RPC) string {
 	signature := c.findSignature(rpc)
 	obj := firstTypeName(signature.Results())
 	c.addImport(obj.Pkg().Path())
-	return fmt.Sprintf("%s.%s", obj.Pkg().Name(), obj.Name())
+
+	return c.objectNameInContext(obj)
+}
+
+// objectNameInContext returns the name of the object prefixed by its package name
+// if needed
+func (c *context) objectNameInContext(obj types.Object) string {
+	if c.pkg.Path() == obj.Pkg().Path() {
+		return obj.Name()
+	} else {
+		return fmt.Sprintf("%s.%s", obj.Pkg().Name(), obj.Name())
+	}
 }
 
 func firstTypeName(tuple *types.Tuple) types.Object {

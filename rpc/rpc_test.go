@@ -47,8 +47,8 @@ func (s *RPCSuite) TestDeclConstructor() {
 	s.Equal(expectedConstructor, output)
 }
 
-const expectedFuncNotGenerated = `func (s *FooServer) DoFoo(ctx context.Context, in *fake.Foo) (result *fake.Bar, err error) {
-	result = new(fake.Bar)
+const expectedFuncNotGenerated = `func (s *FooServer) DoFoo(ctx context.Context, in *Foo) (result *Bar, err error) {
+	result = new(Bar)
 	result = DoFoo(in)
 	return
 }`
@@ -238,13 +238,13 @@ func (s *subpkgServiceServer) Generated(ctx context.Context, in *GeneratedReques
 	result.Result1, err = Generated(in.Arg1)
 	return
 }
-func (s *subpkgServiceServer) Point_GeneratedMethod(ctx context.Context, in *Point_GeneratedMethodRequest) (result *subpkg.Point, err error) {
-	result = new(subpkg.Point)
+func (s *subpkgServiceServer) Point_GeneratedMethod(ctx context.Context, in *Point_GeneratedMethodRequest) (result *Point, err error) {
+	result = new(Point)
 	result = s.Point.GeneratedMethod(in.Arg1)
 	return
 }
-func (s *subpkgServiceServer) Point_GeneratedMethodOnPointer(ctx context.Context, in *Point_GeneratedMethodOnPointerRequest) (result *subpkg.Point, err error) {
-	result = new(subpkg.Point)
+func (s *subpkgServiceServer) Point_GeneratedMethodOnPointer(ctx context.Context, in *Point_GeneratedMethodOnPointerRequest) (result *Point, err error) {
+	result = new(Point)
 	result = s.Point.GeneratedMethodOnPointer(in.Arg1)
 	return
 }
