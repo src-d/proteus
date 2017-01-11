@@ -268,7 +268,7 @@ func (g *Generator) buildFile(ctx *context, decls []ast.Decl) *ast.File {
 }
 
 func (g *Generator) writeFile(file *ast.File, path string) error {
-	fileName := filepath.Join(os.Getenv("GOPATH"), "src", path, "server.proteus.go")
+	fileName := filepath.Join(goSrc, path, "server.proteus.go")
 	f, err := os.Create(fileName)
 	if err != nil {
 		return err
@@ -318,8 +318,8 @@ func ptr(expr ast.Expr) ast.Expr {
 	return &ast.StarExpr{X: expr}
 }
 
-var goSrc = filepath.Join(os.Getenv("GOPATH"), "src") + "/"
+var goSrc = filepath.Join(os.Getenv("GOPATH"), "src")
 
 func removeGoPath(path string) string {
-	return strings.Replace(path, goSrc, "", -1)
+	return strings.TrimLeft(strings.Replace(path, goSrc, "", -1), "/")
 }
