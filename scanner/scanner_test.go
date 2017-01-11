@@ -28,7 +28,7 @@ func TestScanType(t *testing.T) {
 	}{
 		{
 			"named type",
-			newNamed("/foo/bar", "Bar", nil),
+			newNamedWithUnderlying("/foo/bar", "Bar", nil),
 			NewNamed("/foo/bar", "Bar"),
 		},
 		{
@@ -53,14 +53,14 @@ func TestScanType(t *testing.T) {
 		},
 		{
 			"named behind a pointer",
-			types.NewPointer(newNamed("/foo/bar", "Bar", nil)),
+			types.NewPointer(newNamedWithUnderlying("/foo/bar", "Bar", nil)),
 			NewNamed("/foo/bar", "Bar"),
 		},
 		{
 			"map of basic and named",
 			types.NewMap(
 				types.Typ[types.Int],
-				newNamed("/foo/bar", "Bar", nil),
+				newNamedWithUnderlying("/foo/bar", "Bar", nil),
 			),
 			NewMap(
 				NewBasic("int"),
@@ -156,7 +156,7 @@ func TestScanStruct(t *testing.T) {
 			types.NewStruct(
 				[]*types.Var{
 					mkField("Foo",
-						newNamed("/foo", "Foo", types.NewStruct(
+						newNamedWithUnderlying("/foo", "Foo", types.NewStruct(
 							[]*types.Var{
 								mkField("Foo", types.Typ[types.Int], false),
 								mkField("Bar", types.Typ[types.String], false),
@@ -183,7 +183,7 @@ func TestScanStruct(t *testing.T) {
 			types.NewStruct(
 				[]*types.Var{
 					mkField("Foo",
-						newNamed("/foo", "Foo", types.NewStruct(
+						newNamedWithUnderlying("/foo", "Foo", types.NewStruct(
 							[]*types.Var{
 								mkField("Foo", types.Typ[types.Int], false),
 								mkField("Bar", types.Typ[types.String], false),
@@ -210,7 +210,7 @@ func TestScanStruct(t *testing.T) {
 				[]*types.Var{
 					mkField("Foo",
 						types.NewPointer(
-							newNamed("/foo", "Foo", types.NewStruct(
+							newNamedWithUnderlying("/foo", "Foo", types.NewStruct(
 								[]*types.Var{
 									mkField("Foo", types.Typ[types.Int], false),
 									mkField("Bar", types.Typ[types.String], false),
@@ -494,7 +494,7 @@ func repeated(t Type) Type {
 	return t
 }
 
-func newNamed(path, name string, underlying types.Type) types.Type {
+func newNamedWithUnderlying(path, name string, underlying types.Type) types.Type {
 	obj := types.NewTypeName(
 		token.NoPos,
 		types.NewPackage(path, "mock"),
