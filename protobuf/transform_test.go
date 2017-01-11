@@ -1,6 +1,7 @@
 package protobuf
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -456,20 +457,31 @@ func (s *TransformerSuite) TestTransform() {
 	s.Equal(NewStringValue("subpkg"), pkg.Options["go_package"])
 	s.Equal([]string{"github.com/src-d/protobuf/gogoproto/gogo.proto"}, pkg.Imports)
 	s.Equal(0, len(pkg.Enums))
-	s.Equal(5, len(pkg.Messages))
 
 	var msgs = []string{
-		"Point",
 		"GeneratedRequest",
 		"GeneratedResponse",
-		"Point_GeneratedMethodRequest",
+		"MyContainer_NameRequest",
+		"MyContainer_NameResponse",
+		"Point",
 		"Point_GeneratedMethodOnPointerRequest",
+		"Point_GeneratedMethodRequest",
 	}
-	for i, m := range pkg.Messages {
-		s.Equal(msgs[i], m.Name)
+	s.Equal(len(msgs), len(pkg.Messages))
+	for _, m := range pkg.Messages {
+		s.True(hasString(m.Name, msgs), fmt.Sprintf("should have message %s", m.Name))
 	}
 
-	s.Equal(3, len(pkg.RPCs))
+	s.Equal(4, len(pkg.RPCs))
+}
+
+func hasString(str string, coll []string) bool {
+	for _, s := range coll {
+		if s == str {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *TransformerSuite) fixtures() []*scanner.Package {

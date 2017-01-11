@@ -238,6 +238,11 @@ func (s *subpkgServiceServer) Generated(ctx context.Context, in *GeneratedReques
 	result.Result1, err = Generated(in.Arg1)
 	return
 }
+func (s *subpkgServiceServer) MyContainer_Name(ctx context.Context, in *MyContainer_NameRequest) (result *MyContainer_NameResponse, err error) {
+	result = new(MyContainer_NameResponse)
+	result.Result1 = s.MyContainer.Name()
+	return
+}
 func (s *subpkgServiceServer) Point_GeneratedMethod(ctx context.Context, in *Point_GeneratedMethodRequest) (result *Point, err error) {
 	result = new(Point)
 	result = s.Point.GeneratedMethod(in.Arg1)

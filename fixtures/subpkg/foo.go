@@ -32,3 +32,12 @@ func (p Point) GeneratedMethod(a int32) *Point {
 func (p *Point) GeneratedMethodOnPointer(a bool) *Point {
 	return p
 }
+
+type MyContainer struct {
+	name string
+}
+
+//proteus:generate
+func (c *MyContainer) Name() string {
+	return c.Name()
+}

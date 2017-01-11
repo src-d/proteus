@@ -108,7 +108,7 @@ func (s *ResolverSuite) TestResolve() {
 	pkgs, err := sc.Scan()
 	s.Nil(err)
 
-	s.Equal(2, len(pkgs[1].Structs), "num of structs in pkg")
+	s.Equal(3, len(pkgs[1].Structs), "num of structs in pkg")
 	s.r.Resolve(pkgs)
 
 	pkg := pkgs[0]
@@ -127,7 +127,7 @@ func (s *ResolverSuite) TestResolve() {
 	s.Equal("int", basic.Name)
 
 	s.Equal(1, len(pkgs[1].Structs), "a struct of subpkg should have been removed")
-	s.Equal(3, len(pkgs[1].Funcs), "num of funcs in subpkg")
+	s.Equal(4, len(pkgs[1].Funcs), "num of funcs in subpkg")
 
 	s.Equal(&scanner.Func{
 		Name: "Generated",
@@ -138,7 +138,7 @@ func (s *ResolverSuite) TestResolve() {
 			scanner.NewBasic("bool"),
 			scanner.NewNamed("", "error"),
 		},
-	}, pkgs[1].Funcs[0])
+	}, findFuncByName("Generated", pkgs[1].Funcs))
 
 	s.Equal(&scanner.Func{
 		Name: "GeneratedMethod",
@@ -149,7 +149,7 @@ func (s *ResolverSuite) TestResolve() {
 			scanner.NewNamed(projectPath("fixtures/subpkg"), "Point"),
 		},
 		Receiver: scanner.NewNamed(projectPath("fixtures/subpkg"), "Point"),
-	}, pkgs[1].Funcs[1])
+	}, findFuncByName("GeneratedMethod", pkgs[1].Funcs))
 
 	s.Equal(&scanner.Func{
 		Name: "GeneratedMethodOnPointer",
@@ -160,7 +160,16 @@ func (s *ResolverSuite) TestResolve() {
 			scanner.NewNamed(projectPath("fixtures/subpkg"), "Point"),
 		},
 		Receiver: scanner.NewNamed(projectPath("fixtures/subpkg"), "Point"),
-	}, pkgs[1].Funcs[2])
+	}, findFuncByName("GeneratedMethodOnPointer", pkgs[1].Funcs))
+
+	s.Equal(&scanner.Func{
+		Name:  "Name",
+		Input: []scanner.Type{},
+		Output: []scanner.Type{
+			scanner.NewBasic("string"),
+		},
+		Receiver: scanner.NewNamed(projectPath("fixtures/subpkg"), "MyContainer"),
+	}, findFuncByName("Name", pkgs[1].Funcs))
 }
 
 func (s *ResolverSuite) assertStruct(st *scanner.Struct, name string, fields ...string) {
@@ -189,4 +198,14 @@ func enum(name string, values ...string) *scanner.Enum {
 
 func projectPath(pkg string) string {
 	return filepath.Join(project, pkg)
+}
+
+func findFuncByName(name string, fns []*scanner.Func) *scanner.Func {
+	for _, f := range fns {
+		if f.Name == name {
+			return f
+		}
+	}
+
+	return nil
 }

@@ -77,13 +77,6 @@ func (r *Resolver) resolveFunc(f *scanner.Func, info *packagesInfo) bool {
 		return false
 	}
 
-	if f.Receiver != nil {
-		f.Receiver = r.resolveType(f.Receiver, info)
-		if f.Receiver == nil {
-			return false
-		}
-	}
-
 	return true
 }
 

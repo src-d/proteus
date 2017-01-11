@@ -398,14 +398,15 @@ func TestScanner(t *testing.T) {
 	subpkg := pkgs[1]
 
 	require.Equal(4, len(pkg.Structs), "pkg")
-	assertStruct(t, pkg.Structs[0], "Bar", true, "Bar", "Baz")
-	assertStruct(t, pkg.Structs[1], "Foo", true, "Bar", "Baz", "IntList", "IntArray", "Map", "Timestamp", "External", "Duration", "Aliased")
-	assertStruct(t, pkg.Structs[2], "Qux", false, "A", "B")
-	assertStruct(t, pkg.Structs[3], "Saz", true, "Point", "Foo")
+	assertStruct(t, findStructByName("Bar", pkg.Structs), "Bar", true, "Bar", "Baz")
+	assertStruct(t, findStructByName("Foo", pkg.Structs), "Foo", true, "Bar", "Baz", "IntList", "IntArray", "Map", "Timestamp", "External", "Duration", "Aliased")
+	assertStruct(t, findStructByName("Qux", pkg.Structs), "Qux", false, "A", "B")
+	assertStruct(t, findStructByName("Saz", pkg.Structs), "Saz", true, "Point", "Foo")
 
-	require.Equal(2, len(subpkg.Structs), "subpkg")
-	assertStruct(t, subpkg.Structs[0], "NotGenerated", false)
-	assertStruct(t, subpkg.Structs[1], "Point", true, "X", "Y")
+	require.Equal(3, len(subpkg.Structs), "subpkg")
+	assertStruct(t, findStructByName("MyContainer", subpkg.Structs), "MyContainer", false)
+	assertStruct(t, findStructByName("NotGenerated", subpkg.Structs), "NotGenerated", false)
+	assertStruct(t, findStructByName("Point", subpkg.Structs), "Point", true, "X", "Y")
 
 	_, ok := pkg.Aliases[fmt.Sprintf("%s.%s", projectPath("fixtures"), "Baz")]
 	require.False(ok, "Baz should not be an alias anymore")
@@ -420,10 +421,31 @@ func TestScanner(t *testing.T) {
 	)
 
 	require.Equal(0, len(pkg.Funcs), "pkg funcs")
-	require.Equal(3, len(subpkg.Funcs), "subpkg funcs")
-	assertFunc(t, subpkg.Funcs[0], "Generated", "", []string{"string"}, []string{"bool", "error"}, false)
-	assertFunc(t, subpkg.Funcs[1], "GeneratedMethod", "Point", []string{"int32"}, []string{"Point"}, false)
-	assertFunc(t, subpkg.Funcs[2], "GeneratedMethodOnPointer", "Point", []string{"bool"}, []string{"Point"}, false)
+	require.Equal(4, len(subpkg.Funcs), "subpkg funcs")
+	assertFunc(t, findFuncByName("Generated", subpkg.Funcs), "Generated", "", []string{"string"}, []string{"bool", "error"}, false)
+	assertFunc(t, findFuncByName("GeneratedMethod", subpkg.Funcs), "GeneratedMethod", "Point", []string{"int32"}, []string{"Point"}, false)
+	assertFunc(t, findFuncByName("GeneratedMethodOnPointer", subpkg.Funcs), "GeneratedMethodOnPointer", "Point", []string{"bool"}, []string{"Point"}, false)
+	assertFunc(t, findFuncByName("Name", subpkg.Funcs), "Name", "MyContainer", []string{}, []string{"string"}, false)
+}
+
+func findFuncByName(name string, fns []*Func) *Func {
+	for _, f := range fns {
+		if f.Name == name {
+			return f
+		}
+	}
+
+	return nil
+}
+
+func findStructByName(name string, coll []*Struct) *Struct {
+	for _, s := range coll {
+		if s.Name == name {
+			return s
+		}
+	}
+
+	return nil
 }
 
 func assertStruct(t *testing.T, s *Struct, name string, generate bool, fields ...string) {
