@@ -58,6 +58,7 @@ func NewGenerator() *Generator {
 func (g *Generator) Generate(proto *protobuf.Package, path string) error {
 	if len(proto.RPCs) == 0 {
 		report.Warn("no RPCs in the given proto file, not generating anything")
+		return nil
 	}
 
 	pkg, err := g.importer.Import(path)

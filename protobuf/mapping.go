@@ -1,12 +1,18 @@
 package protobuf
 
+import (
+	"fmt"
+	"strings"
+)
+
 // ProtoType represents a protobuf type. It can optionally have a
 // package and it may require an import to work.
 type ProtoType struct {
-	Package string
-	Basic   bool
-	Name    string
-	Import  string
+	Package  string
+	Basic    bool
+	Name     string
+	Import   string
+	GoImport string
 }
 
 // Type returns the type representation of the protobuf type.
@@ -22,7 +28,7 @@ func (t *ProtoType) Type() Type {
 // valid name. "foo.bar/baz.Qux" is a valid type name as well.
 type TypeMappings map[string]*ProtoType
 
-var defaultMappings = TypeMappings{
+var DefaultMappings = TypeMappings{
 	"float64": &ProtoType{Name: "double", Basic: true},
 	"float32": &ProtoType{Name: "float", Basic: true},
 	"int32":   &ProtoType{Name: "int32", Basic: true},
@@ -41,9 +47,23 @@ var defaultMappings = TypeMappings{
 	"uintptr": &ProtoType{Name: "uint64", Basic: true},
 	"rune":    &ProtoType{Name: "int32", Basic: true},
 	"time.Time": &ProtoType{
-		Name:    "Timestamp",
-		Package: "google.protobuf",
-		Import:  "google/protobuf/timestamp.proto",
+		Name:     "Timestamp",
+		Package:  "google.protobuf",
+		Import:   "google/protobuf/timestamp.proto",
+		GoImport: "github.com/gogo/protobuf/types",
 	},
 	"time.Duration": &ProtoType{Name: "int64", Basic: true},
+}
+
+// ToGoOutPath returns the set of import mappings for the --go_out family of options.
+// For more info see src-d/proteus#41
+func (t TypeMappings) ToGoOutPath() string {
+	var strs []string
+	for _, value := range t {
+		if value.Import != "" && value.GoImport != "" {
+			strs = append(strs, fmt.Sprintf("M%s=%s", value.Import, value.GoImport))
+		}
+	}
+
+	return strings.Join(strs, ",")
 }

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/src-d/proteus"
+	"github.com/src-d/proteus/protobuf"
 	"github.com/src-d/proteus/report"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -120,26 +121,65 @@ func genAll(c *cli.Context) error {
 	}
 
 	for _, p := range packages {
-		outPath := filepath.Join(goSrc, p)
+		outPath := goSrc
 		proto := filepath.Join(path, p, "generated.proto")
-		cmd := exec.Command(protocPath,
-			fmt.Sprintf(
-				"--proto_path=%s:%s:%s:.",
-				goSrc,
-				filepath.Join(protobufSrc, "protobuf"),
-				filepath.Join(path, p),
-			),
-			fmt.Sprintf("--gofast_out=plugins=grpc:%s", outPath),
-			proto,
-		)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
+
+		err := protocExec(protocPath, p, outPath, proto)
+		if err != nil {
 			return fmt.Errorf("error generating Go files from %q: %s", proto, err)
+		}
+
+		matches, err := filepath.Glob(filepath.Join(path, p, "*.pb.go"))
+		if err != nil {
+			return fmt.Errorf("error moving Go files")
+		}
+
+		moveToDir := filepath.Join(outPath, p)
+		for _, s := range matches {
+			mv(s, moveToDir)
 		}
 	}
 
 	return genRPCServer(c)
+}
+
+func protocExec(protocPath, pck, outPath, protoFile string) error {
+	cmd := exec.Command(
+		protocPath,
+		fmt.Sprintf(
+			"--proto_path=%s:%s:%s:.",
+			goSrc,
+			filepath.Join(protobufSrc, "protobuf"),
+			filepath.Join(path, pck),
+		),
+		genAllGoFastOutOption(outPath),
+		protoFile,
+	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+func mv(from, to string) error {
+	cmd := exec.Command("mv", from, to)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+func genAllGoFastOutOption(outPath string) string {
+	str := "--gofast_out=plugins=grpc"
+	importMappings := protobuf.DefaultMappings.ToGoOutPath()
+
+	if importMappings != "" {
+		str += fmt.Sprintf(",%s", importMappings)
+	}
+
+	str += fmt.Sprintf(":%s", outPath)
+
+	return str
 }
 
 func checkFolder(p string) error {

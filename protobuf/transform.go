@@ -263,7 +263,7 @@ func (t *Transformer) transformType(pkg *Package, typ scanner.Type) Type {
 func (t *Transformer) findMapping(name string) *ProtoType {
 	typ := t.mappings[name]
 	if typ == nil {
-		typ = defaultMappings[name]
+		typ = DefaultMappings[name]
 	}
 
 	return typ
