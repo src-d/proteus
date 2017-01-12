@@ -11,6 +11,8 @@ All the exported functions and methods will be turned into protobuf RPC services
 
 We want to build proteus in a very extensible way, so every step of the generation can be hackable via plugins and everyone can adapt proteus to their needs without actually having to integrate functionality that does not play well with the core library. We are releasing the plugin feature after Go 1.8 is released, which includes the `plugin` package of the standard library.
 
+For an overall overview of the code architecture take a look at [the architecture documentation](/ARCHITECTURE.m/ARCHITECTURE.md).
+
 ### Install
 
 ```
