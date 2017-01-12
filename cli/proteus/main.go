@@ -20,8 +20,9 @@ var (
 
 func main() {
 	app := cli.NewApp()
-	app.Description = "Generate .proto files from your Go packages."
-	app.Version = "0.9.0"
+	app.Name = "proteus"
+	app.Description = "Proteus generates code and protobuffer 3 proto files while keeping your Go source code as the source of truth."
+	app.Version = "1.0.0"
 
 	baseFlags := []cli.Flag{
 		cli.StringSliceFlag{
@@ -45,16 +46,18 @@ func main() {
 	app.Flags = append(baseFlags, folderFlag)
 	app.Commands = []cli.Command{
 		{
-			Name:   "proto",
-			Usage:  "Generates .proto files from Go packages",
-			Action: initCmd(genProtos),
-			Flags:  append(baseFlags, folderFlag),
+			Name:        "proto",
+			Description: "Generates .proto files from your Go source code.",
+			Usage:       "Generates .proto files from Go packages",
+			Action:      initCmd(genProtos),
+			Flags:       append(baseFlags, folderFlag),
 		},
 		{
-			Name:   "rpc",
-			Usage:  "Generates gRPC server implementation",
-			Action: initCmd(genRPCServer),
-			Flags:  baseFlags,
+			Name:        "rpc",
+			Description: "Generates the gRPC implementation of the gRPC server interface defined by your Go source code.",
+			Usage:       "Generates gRPC server implementation",
+			Action:      initCmd(genRPCServer),
+			Flags:       baseFlags,
 		},
 	}
 	app.Action = initCmd(genAll)
