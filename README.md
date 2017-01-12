@@ -2,11 +2,12 @@
 
 [![GoDoc](https://godoc.org/github.com/src-d/proteus?status.svg)](https://godoc.org/github.com/src-d/proteus) [![Build Status](https://travis-ci.org/src-d/proteus.svg?branch=master)](https://travis-ci.org/src-d/proteus) [![codecov](https://codecov.io/gh/src-d/proteus/branch/master/graph/badge.svg)](https://codecov.io/gh/src-d/proteus) [![License](http://img.shields.io/:license-mit-blue.svg)](http://doge.mit-license.org) [![Go Report Card](https://goreportcard.com/badge/github.com/src-d/proteus)](https://goreportcard.com/report/github.com/src-d/proteus) [![codebeat badge](https://codebeat.co/badges/976ff535-c79b-429d-b35c-888a048a3201)](https://codebeat.co/projects/github-com-src-d-proteus)
 
-[Proteus](https://en.wikipedia.org/wiki/Proteus) /proʊtiəs/ is a tool to generate protocol buffers version 3 compatible `.proto` files from your Go structs and types.
+[Proteus](https://en.wikipedia.org/wiki/Proteus) /proʊtiəs/ is a tool to generate protocol buffers version 3 compatible `.proto` files from your Go structs, types and functions.
 
 The motivation behind this library is to use Go as a source of truth for your models instead of the other way around and then generating Go code from a `.proto` file, which does not generate idiomatic code.
 
-Proteus scans all the code in the selected packages and generates protobuf messages for every exported struct (and all the ones that are referenced in any other struct, even though they are not exported). Also, the types that semantically are used as enumerations in Go are transformed into proper protobuf enumerations.
+Proteus scans all the code in the selected packages and generates protobuf messages for every exported struct (and all the ones that are referenced in any other struct, even though they are not exported). The types that semantically are used as enumerations in Go are transformed into proper protobuf enumerations.
+All the exported functions and methods will be turned into protobuf RPC services.
 
 We want to build proteus in a very extensible way, so every step of the generation can be hackable via plugins and everyone can adapt proteus to their needs without actually having to integrate functionality that does not play well with the core library. We are releasing the plugin feature after Go 1.8 is released, which includes the `plugin` package of the standard library.
 
@@ -16,9 +17,24 @@ We want to build proteus in a very extensible way, so every step of the generati
 go get -v github.com/src-d/proteus/...
 ```
 
+### Requirements
+
+There are two requirements for the full process.
+
+* [`protoc`](https://github.com/google/protobuf) binary installed on your path 
+* `go get github.com/src-d/protobuf/...` (for now install this one instead of github.com/gogo/protobuf)
+
 ### Usage
 
-Proto files can be generated using the command line tool provided with proteus.
+You can generate the proto files, the marshal/unmarshal and the rest of protobuf stuff for your Go types, the RPC client and server interface and the RPC server implementation for your packages. That is, the whole process.
+
+```bash
+proteus -f /path/to/protos/folder \
+        -p my/go/package \
+        -p my/other/go/package
+```
+
+You can generate proto files only using the command line tool provided with proteus.
 
 ```bash
 proteus proto -f /path/to/output/folder \
@@ -27,7 +43,7 @@ proteus proto -f /path/to/output/folder \
         --verbose
 ```
 
-You can also generate gRPC server implementations for your packages.
+You can also only generate gRPC server implementations for your packages.
 
 ```bash
 proteus rpc -p my/go/package \
@@ -262,9 +278,6 @@ You can find an example of a *real* use case on the [example](https://github.com
 ### Features to come
 
 - Extensible mapping and options via plugins (waiting for Go 1.8 release).
-- Custom plugin for seamless integration with [`gogo/protobuf`](https://github.com/gogo/protobuf)
-- Generation of services based on exported functions and methods.
-- Generation of gRPC service implementations.
 
 ### Contribute
 
