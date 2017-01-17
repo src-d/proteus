@@ -130,13 +130,13 @@ func (t *Transformer) transformTypeList(pkg *Package, types []scanner.Type, name
 		return NewGeneratedNamed(toProtobufPkg(pkg.Path), msgName)
 	}
 
-	return t.transformType(pkg, types[0])
+	return t.transformType(pkg, types[0], &Message{}, &Field{})
 }
 
 func (t *Transformer) createMessageFromTypes(pkg *Package, name string, types []scanner.Type, fieldPrefix string) *Message {
 	msg := &Message{Name: name}
 	for i, typ := range types {
-		f := t.transformField(pkg, &scanner.Field{
+		f := t.transformField(pkg, msg, &scanner.Field{
 			Name: fmt.Sprintf("%s%d", fieldPrefix, i+1),
 			Type: typ,
 		}, i+1)
@@ -170,7 +170,7 @@ func (t *Transformer) transformStruct(pkg *Package, s *scanner.Struct) *Message 
 	}
 
 	for i, f := range s.Fields {
-		field := t.transformField(pkg, f, i+1)
+		field := t.transformField(pkg, msg, f, i+1)
 		if field == nil {
 			msg.Reserve(uint(i) + 1)
 			report.Warn("field %q of struct %q has an invalid type, ignoring field but reserving its position", f.Name, s.Name)
@@ -189,32 +189,35 @@ func defaultOptionsForScannedMessage(s *scanner.Struct) Options {
 	}
 }
 
-func (t *Transformer) transformField(pkg *Package, field *scanner.Field, pos int) *Field {
+func (t *Transformer) transformField(pkg *Package, msg *Message, field *scanner.Field, pos int) *Field {
 	var (
 		typ      Type
 		repeated = field.Type.IsRepeated()
 	)
+
+	f := &Field{
+		Name:     toLowerSnakeCase(field.Name),
+		Options:  defaultOptionsForStructField(field),
+		Pos:      pos,
+		Repeated: repeated,
+	}
 
 	// []byte is the only repeated type that maps to
 	// a non-repeated type in protobuf, so we handle
 	// it a bit differently.
 	if isByteSlice(field.Type) {
 		typ = NewBasic("bytes")
-		repeated = false
+		f.Repeated = false
 	} else {
-		typ = t.transformType(pkg, field.Type)
+		typ = t.transformType(pkg, field.Type, msg, f)
 		if typ == nil {
 			return nil
 		}
 	}
 
-	return &Field{
-		Name:     toLowerSnakeCase(field.Name),
-		Options:  defaultOptionsForStructField(field),
-		Pos:      pos,
-		Type:     typ,
-		Repeated: repeated,
-	}
+	f.Type = typ
+
+	return f
 }
 
 func defaultOptionsForStructField(field *scanner.Field) Options {
@@ -226,7 +229,7 @@ func defaultOptionsForStructField(field *scanner.Field) Options {
 	return opts
 }
 
-func (t *Transformer) transformType(pkg *Package, typ scanner.Type) Type {
+func (t *Transformer) transformType(pkg *Package, typ scanner.Type, msg *Message, field *Field) Type {
 	if isError(typ) {
 		report.Error("error type is not supported")
 		return nil
@@ -237,6 +240,7 @@ func (t *Transformer) transformType(pkg *Package, typ scanner.Type) Type {
 		protoType := t.findMapping(ty.String())
 		if protoType != nil {
 			pkg.Import(protoType)
+			protoType.Decorate(pkg, msg, field)
 			return protoType.Type()
 		}
 
@@ -246,14 +250,15 @@ func (t *Transformer) transformType(pkg *Package, typ scanner.Type) Type {
 		protoType := t.findMapping(ty.Name)
 		if protoType != nil {
 			pkg.Import(protoType)
+			protoType.Decorate(pkg, msg, field)
 			return protoType.Type()
 		}
 
 		report.Warn("basic type %q is not defined in the mappings, ignoring", ty.Name)
 	case *scanner.Map:
 		return NewMap(
-			t.transformType(pkg, ty.Key),
-			t.transformType(pkg, ty.Value),
+			t.transformType(pkg, ty.Key, msg, field),
+			t.transformType(pkg, ty.Value, msg, field),
 		)
 	}
 
@@ -264,6 +269,10 @@ func (t *Transformer) findMapping(name string) *ProtoType {
 	typ := t.mappings[name]
 	if typ == nil {
 		typ = DefaultMappings[name]
+	}
+
+	if typ != nil && typ.Warn != "" {
+		report.Warn(typ.Warn, name)
 	}
 
 	return typ

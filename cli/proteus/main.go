@@ -124,8 +124,7 @@ func genAll(c *cli.Context) error {
 		outPath := goSrc
 		proto := filepath.Join(path, p, "generated.proto")
 
-		err := protocExec(protocPath, p, outPath, proto)
-		if err != nil {
+		if err := protocExec(protocPath, p, outPath, proto); err != nil {
 			return fmt.Errorf("error generating Go files from %q: %s", proto, err)
 		}
 
