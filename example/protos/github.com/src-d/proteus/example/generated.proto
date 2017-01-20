@@ -1,13 +1,13 @@
 syntax = "proto3";
 package github.com.srcd.proteus.example;
 
-import "github.com/src-d/protobuf/gogoproto/gogo.proto";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "example";
 
 message Category {
-	option (gogoproto.drop_type_declaration) = true;
+	option (gogoproto.typedecl) = false;
 	int64 id = 1 [(gogoproto.customname) = "ID"];
 	google.protobuf.Timestamp created_at = 2 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 	google.protobuf.Timestamp updated_at = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
@@ -19,13 +19,13 @@ message Category {
 }
 
 message CategoryOptions {
-	option (gogoproto.drop_type_declaration) = true;
+	option (gogoproto.typedecl) = false;
 	bool show_prices = 1;
 	bool can_buy = 2;
 }
 
 message Product {
-	option (gogoproto.drop_type_declaration) = true;
+	option (gogoproto.typedecl) = false;
 	int64 id = 1 [(gogoproto.customname) = "ID"];
 	google.protobuf.Timestamp created_at = 2 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 	google.protobuf.Timestamp updated_at = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
@@ -37,7 +37,7 @@ message Product {
 }
 
 enum Type {
-	option (gogoproto.enum_drop_type_declaration) = true;
+	option (gogoproto.enumdecl) = false;
 	PUBLIC = 0;
 	PRIVATE = 1;
 	CUSTOM = 2;

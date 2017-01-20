@@ -24,7 +24,7 @@ go get -v github.com/src-d/proteus/...
 There are two requirements for the full process.
 
 * [`protoc`](https://github.com/google/protobuf) binary installed on your path 
-* `go get github.com/src-d/protobuf/...` (for now install this one instead of github.com/gogo/protobuf)
+* `go get github.com/gogo/protobuf/...`
 
 ### Usage
 

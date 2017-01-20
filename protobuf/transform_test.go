@@ -293,7 +293,7 @@ func (s *TransformerSuite) TestTransformStruct() {
 	s.Equal(0, len(msg.Fields[0].Options))
 	s.Equal(1, len(msg.Reserved), "should have reserved field")
 	s.Equal(uint(1), msg.Reserved[0])
-	s.Equal(NewLiteralValue("true"), msg.Options["(gogoproto.drop_type_declaration)"], "should drop declaration by default")
+	s.Equal(NewLiteralValue("false"), msg.Options["(gogoproto.typedecl)"], "should drop declaration by default")
 }
 
 func (s *TransformerSuite) TestTransformFuncMultiple() {
@@ -500,7 +500,7 @@ func (s *TransformerSuite) TestTransformEnum() {
 	s.assertEnumVal(enum.Values[0], "FOO", 0)
 	s.assertEnumVal(enum.Values[1], "BAR", 1)
 	s.assertEnumVal(enum.Values[2], "BAR_BAZ", 2)
-	s.Equal(NewLiteralValue("true"), enum.Options["(gogoproto.enum_drop_type_declaration)"], "should drop declaration by default")
+	s.Equal(NewLiteralValue("false"), enum.Options["(gogoproto.enumdecl)"], "should drop declaration by default")
 }
 
 func (s *TransformerSuite) TestTransform() {
@@ -511,7 +511,7 @@ func (s *TransformerSuite) TestTransform() {
 	s.Equal("github.com/src-d/proteus/fixtures", pkg.Path)
 	s.Equal(NewStringValue("foo"), pkg.Options["go_package"])
 	s.Equal([]string{
-		"github.com/src-d/protobuf/gogoproto/gogo.proto",
+		"github.com/gogo/protobuf/gogoproto/gogo.proto",
 		"google/protobuf/timestamp.proto",
 		"github.com/src-d/proteus/fixtures/subpkg/generated.proto",
 	}, pkg.Imports)
@@ -523,7 +523,7 @@ func (s *TransformerSuite) TestTransform() {
 	s.Equal("github.com.srcd.proteus.fixtures.subpkg", pkg.Name)
 	s.Equal("github.com/src-d/proteus/fixtures/subpkg", pkg.Path)
 	s.Equal(NewStringValue("subpkg"), pkg.Options["go_package"])
-	s.Equal([]string{"github.com/src-d/protobuf/gogoproto/gogo.proto"}, pkg.Imports)
+	s.Equal([]string{"github.com/gogo/protobuf/gogoproto/gogo.proto"}, pkg.Imports)
 	s.Equal(0, len(pkg.Enums))
 
 	var msgs = []string{

@@ -10,7 +10,7 @@ import (
 	"golang.org/x/text/transform"
 	"golang.org/x/text/unicode/norm"
 
-	"github.com/src-d/protobuf/protoc-gen-gogo/generator"
+	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 
 	"github.com/src-d/proteus/report"
 	"github.com/src-d/proteus/scanner"
@@ -46,7 +46,7 @@ func (t *Transformer) Transform(p *scanner.Package) *Package {
 	pkg := &Package{
 		Name:    toProtobufPkg(p.Path),
 		Path:    p.Path,
-		Imports: []string{"github.com/src-d/protobuf/gogoproto/gogo.proto"},
+		Imports: []string{"github.com/gogo/protobuf/gogoproto/gogo.proto"},
 		Options: defaultOptionsForPackage(p),
 	}
 
@@ -159,7 +159,7 @@ func (t *Transformer) transformEnum(e *scanner.Enum) *Enum {
 
 func defaultOptionsForScannedEnum(e *scanner.Enum) Options {
 	return Options{
-		"(gogoproto.enum_drop_type_declaration)": NewLiteralValue("true"),
+		"(gogoproto.enumdecl)": NewLiteralValue("false"),
 	}
 }
 
@@ -185,7 +185,7 @@ func (t *Transformer) transformStruct(pkg *Package, s *scanner.Struct) *Message 
 
 func defaultOptionsForScannedMessage(s *scanner.Struct) Options {
 	return Options{
-		"(gogoproto.drop_type_declaration)": NewLiteralValue("true"),
+		"(gogoproto.typedecl)": NewLiteralValue("false"),
 	}
 }
 
