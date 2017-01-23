@@ -201,31 +201,77 @@ func (g *Generator) genBaseMethodBody(methodType *ast.FuncType) *ast.BlockStmt {
 }
 
 func (g *Generator) genMethodBody(ctx *context, rpc *protobuf.RPC, typ *ast.FuncType) *ast.BlockStmt {
+	if !isGenerated(rpc.Output) {
+		return g.genMethodBodyForNotGeneratedOutput(ctx, rpc, typ)
+	} else {
+		return g.genMethodBodyForGeneratedOutput(ctx, rpc, typ)
+	}
+}
+
+func (g *Generator) genMethodBodyAssignmentsForGeneratedOutput(ctx *context, rpc *protobuf.RPC, msg *protobuf.Message) (lhs []ast.Expr) {
+	for i, f := range msg.Fields {
+		if f == nil {
+			lhs = append(lhs, ast.NewIdent("_"))
+		} else {
+			lhs = append(lhs, ast.NewIdent(fmt.Sprintf(
+				"result.Result%d", i+1,
+			)))
+		}
+	}
+	return
+}
+
+func emptyBodyForMethodCall(body *ast.BlockStmt, methodCall ast.Expr) *ast.BlockStmt {
+	body.List = []ast.Stmt{
+		&ast.ExprStmt{
+			X: methodCall,
+		},
+		new(ast.ReturnStmt),
+	}
+	return body
+}
+
+func (g *Generator) genMethodBodyForGeneratedOutput(ctx *context, rpc *protobuf.RPC, typ *ast.FuncType) *ast.BlockStmt {
+	body := g.genBaseMethodBody(typ)
+	methodCall := g.genMethodCall(ctx, rpc)
+	call := &ast.AssignStmt{
+		Tok: token.ASSIGN,
+		Rhs: []ast.Expr{methodCall},
+	}
+
+	msg := ctx.findMessage(typeName(rpc.Output))
+
+	if len(msg.Fields) == 0 && !rpc.HasError {
+		return emptyBodyForMethodCall(body, methodCall)
+	} else if len(msg.Fields) == 0 {
+		body.List = nil
+	}
+
+	body.List = append(body.List, call)
+	lhs := g.genMethodBodyAssignmentsForGeneratedOutput(ctx, rpc, msg)
+	call.Lhs = append(call.Lhs, lhs...)
+
+	if rpc.HasError {
+		call.Lhs = append(call.Lhs, ast.NewIdent("err"))
+	}
+
+	body.List = append(body.List, new(ast.ReturnStmt))
+	return body
+}
+
+func (g *Generator) genMethodBodyForNotGeneratedOutput(ctx *context, rpc *protobuf.RPC, typ *ast.FuncType) *ast.BlockStmt {
 	body := g.genBaseMethodBody(typ)
 	methodCall := g.genMethodCall(ctx, rpc)
 	call := &ast.AssignStmt{Tok: token.ASSIGN}
 
-	if !isGenerated(rpc.Output) {
-		call.Lhs = append(call.Lhs, ast.NewIdent("result"))
-	} else {
-		msg := ctx.findMessage(typeName(rpc.Output))
-		if len(msg.Fields) == 0 && !rpc.HasError {
-			body.List = []ast.Stmt{
-				&ast.ExprStmt{
-					X: methodCall,
-				},
-				new(ast.ReturnStmt),
-			}
-			return body
-		} else if len(msg.Fields) == 0 {
-			body.List = nil
-		}
+	needToAddressOutput := !isGenerated(rpc.Output) && !rpc.Output.IsNullable()
 
-		for i := range msg.Fields {
-			call.Lhs = append(call.Lhs, ast.NewIdent(fmt.Sprintf(
-				"result.Result%d", i+1,
-			)))
-		}
+	// Specific code
+	if needToAddressOutput {
+		call.Lhs = append(call.Lhs, ast.NewIdent("aux"))
+		call.Tok = token.DEFINE
+	} else {
+		call.Lhs = append(call.Lhs, ast.NewIdent("result"))
 	}
 
 	if rpc.HasError {
@@ -234,6 +280,19 @@ func (g *Generator) genMethodBody(ctx *context, rpc *protobuf.RPC, typ *ast.Func
 
 	call.Rhs = append(call.Rhs, methodCall)
 	body.List = append(body.List, call)
+
+	if needToAddressOutput {
+		body.List = append(body.List, &ast.AssignStmt{
+			Tok: token.ASSIGN,
+			Lhs: []ast.Expr{ast.NewIdent("result")},
+			Rhs: []ast.Expr{
+				&ast.UnaryExpr{
+					Op: token.AND,
+					X:  ast.NewIdent("aux"),
+				},
+			},
+		})
+	}
 	body.List = append(body.List, new(ast.ReturnStmt))
 	return body
 }
@@ -253,7 +312,7 @@ func (g *Generator) buildFile(ctx *context, decls []ast.Decl) *ast.File {
 		Name: ast.NewIdent(ctx.pkg.Name()),
 	}
 
-	var specs = []ast.Spec{newImport("context")}
+	var specs = []ast.Spec{newImport("golang.org/x/net/context")}
 	for _, i := range ctx.imports {
 		specs = append(specs, newImport(i))
 	}

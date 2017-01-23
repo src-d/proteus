@@ -275,11 +275,30 @@ In the future, this will be extensible via plugins.
 
 ### Examples
 
-You can find an example of a *real* use case on the [example](https://github.com/src-d/proteus/tree/master/example) folder along with the generated `.proto` file so you can see what a generated protobuffer file looks like.
+You can find an example of a *real* use case on the [example](xample) folder.
+For checking how the server and client works, see
+[server.go](example/server/server.go) and
+[client.go](example/client/client.go). For running the example:
+
+- In the example folder, do a `make regenerate`.
+- `go run server/server.go &`
+- `go run client/client.go`
+- Kill your server.
 
 ### Features to come
 
 - Extensible mapping and options via plugins (waiting for Go 1.8 release).
+
+### Known Limitations
+
+The following is a list of known limitations and the current state of them.
+
+* Type declarations to arrays or slices are not supported (`type IntList
+  []int`). This requires the creation of a new gogoprotobuf plugins.
+* Only `{,u}int32` and `{,u}int64` is supported in protobuf. Therefore, all
+  `{,u}int` types are upgraded to the next size and a warning is printed. Same
+  thing happens with `float`s and `double`s.
+* 
 
 ### Contribute
 

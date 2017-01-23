@@ -215,12 +215,24 @@ func (s *TransformerSuite) TestTransformType() {
 			NewBasic("int64"),
 			"",
 		},
+		{
+			scanner.NewAlias(
+				scanner.NewNamed("foo", "Bar"),
+				scanner.NewBasic("string"),
+			),
+			NewAlias(
+				NewNamed("foo", "Bar"),
+				NewBasic("string"),
+			),
+			"foo/generated.proto",
+		},
 	}
 
 	for _, c := range cases {
 		var pkg Package
 		t := s.t.transformType(&pkg, c.typ, &Message{}, &Field{})
-		s.Equal(c.expected, t)
+		s.assertType(c.expected, t, "type")
+		s.assertSource(t, c.typ)
 
 		if c.imported != "" {
 			s.Equal(1, len(pkg.Imports))
@@ -238,22 +250,50 @@ func (s *TransformerSuite) TestTransformField() {
 		{
 			"Foo",
 			scanner.NewBasic("int"),
-			&Field{Name: "foo", Type: NewBasic("int64"), Options: make(Options)},
+			&Field{
+				Name:    "foo",
+				Type:    NewBasic("int64"),
+				Options: Options{},
+			},
 		},
 		{
 			"Bar",
 			repeated(scanner.NewBasic("byte")),
-			&Field{Name: "bar", Type: NewBasic("bytes"), Options: make(Options)},
+			&Field{
+				Name:    "bar",
+				Type:    NewBasic("bytes"),
+				Options: Options{},
+			},
 		},
 		{
 			"BazBar",
 			repeated(scanner.NewBasic("int")),
-			&Field{Name: "baz_bar", Type: NewBasic("int64"), Repeated: true, Options: make(Options)},
+			&Field{
+				Name:     "baz_bar",
+				Type:     NewBasic("int64"),
+				Repeated: true,
+				Options:  Options{},
+			},
 		},
 		{
 			"CustomID",
 			scanner.NewBasic("int"),
-			&Field{Name: "custom_id", Type: NewBasic("int64"), Options: Options{"(gogoproto.customname)": NewStringValue("CustomID")}},
+			&Field{
+				Name: "custom_id",
+				Type: NewBasic("int64"),
+				Options: Options{
+					"(gogoproto.customname)": NewStringValue("CustomID"),
+				},
+			},
+		},
+		{
+			"NullableType",
+			nullable(scanner.NewNamed("my/pckg", "hello")),
+			&Field{
+				Name:    "nullable_type",
+				Type:    NewNamed("my.pckg", "hello"),
+				Options: Options{},
+			},
 		},
 		{
 			"Invalid",
@@ -267,7 +307,13 @@ func (s *TransformerSuite) TestTransformField() {
 			Name: c.name,
 			Type: c.typ,
 		}, 0)
-		s.Equal(c.expected, f, c.name)
+		if c.expected == nil {
+			s.Nil(f, c.name)
+		} else {
+			s.Equal(c.expected.Name, f.Name, fmt.Sprintf("Name in %s", c.name))
+			s.assertType(c.expected.Type, f.Type, c.name)
+			s.Equal(c.expected.Options, f.Options, fmt.Sprintf("Options in %s", c.name))
+		}
 	}
 }
 
@@ -314,8 +360,8 @@ func (s *TransformerSuite) TestTransformFuncMultiple() {
 
 	s.NotNil(rpc)
 	s.Equal(fn.Name, rpc.Name)
-	s.Equal(NewGeneratedNamed("baz", "DoFooRequest"), rpc.Input)
-	s.Equal(NewGeneratedNamed("baz", "DoFooResponse"), rpc.Output)
+	s.assertType(NewGeneratedNamed("baz", "DoFooRequest"), rpc.Input, "rpc input")
+	s.assertType(NewGeneratedNamed("baz", "DoFooResponse"), rpc.Output, "rpc output")
 
 	s.Equal(2, len(pkg.Messages), "two messages should have been created")
 	msg := pkg.Messages[0]
@@ -374,8 +420,8 @@ func (s *TransformerSuite) TestTransformFuncEmpty() {
 
 	s.NotNil(rpc)
 	s.Equal(fn.Name, rpc.Name)
-	s.Equal(NewGeneratedNamed("baz", "DoFooRequest"), rpc.Input)
-	s.Equal(NewGeneratedNamed("baz", "DoFooResponse"), rpc.Output)
+	s.assertType(NewGeneratedNamed("baz", "DoFooRequest"), rpc.Input, "rpc input")
+	s.assertType(NewGeneratedNamed("baz", "DoFooResponse"), rpc.Output, "rpc output")
 	s.Equal(2, len(pkg.Messages), "two messages should have been created")
 	msg := pkg.Messages[0]
 	s.Equal("DoFooRequest", msg.Name)
@@ -402,8 +448,8 @@ func (s *TransformerSuite) TestTransformFunc1BasicArg() {
 
 	s.NotNil(rpc)
 	s.Equal(fn.Name, rpc.Name)
-	s.Equal(NewGeneratedNamed("", "DoFooRequest"), rpc.Input)
-	s.Equal(NewGeneratedNamed("", "DoFooResponse"), rpc.Output)
+	s.assertType(NewGeneratedNamed("", "DoFooRequest"), rpc.Input, "rpc input")
+	s.assertType(NewGeneratedNamed("", "DoFooResponse"), rpc.Output, "rpc output")
 
 	s.Equal(2, len(pkg.Messages), "two messages should have been created")
 	msg := pkg.Messages[0]
@@ -432,8 +478,10 @@ func (s *TransformerSuite) TestTransformFunc1NamedArg() {
 
 	s.NotNil(rpc)
 	s.Equal(fn.Name, rpc.Name)
-	s.Equal(NewNamed("foo", "Foo"), rpc.Input)
-	s.Equal(NewNamed("foo", "Bar"), rpc.Output)
+	s.assertType(NewNamed("foo", "Foo"), rpc.Input, "transform func 1")
+	s.assertSource(rpc.Input, fn.Input[0])
+	s.assertType(NewNamed("foo", "Bar"), rpc.Output, "transform func 1")
+	s.assertSource(rpc.Output, fn.Output[0])
 }
 
 func (s *TransformerSuite) TestTransformFuncReceiver() {
@@ -472,12 +520,13 @@ func (s *TransformerSuite) TestTransformFuncRepeatedSingle() {
 
 	s.NotNil(rpc)
 	s.Equal(fn.Name, rpc.Name)
-	s.Equal(rpc.Input, NewGeneratedNamed("", "DoFooRequest"))
-	s.Equal(rpc.Output, NewGeneratedNamed("", "DoFooResponse"))
+	s.assertType(NewGeneratedNamed("", "DoFooRequest"), rpc.Input, "rpc input")
+	s.assertType(NewGeneratedNamed("", "DoFooResponse"), rpc.Output, "rpc output")
 
 	s.Equal(2, len(pkg.Messages), "two messages should have been created")
 	msg := pkg.Messages[0]
 	s.Equal("DoFooRequest", msg.Name)
+	s.NotContains(msg.Options, "(gogoproto.typedecl)", "should not have the option typedecl")
 	s.Equal(1, len(msg.Fields), "DoFooRequest should have same fields as args")
 	s.assertField(msg.Fields[0], "arg1", NewBasic("int64"))
 	s.True(msg.Fields[0].Repeated, "field should be repeated")
@@ -561,14 +610,64 @@ func (s *TransformerSuite) fixtures() []*scanner.Package {
 	return pkgs
 }
 
+func (s *TransformerSuite) assertType(expected, actual Type, name string) {
+	switch e := expected.(type) {
+	case *Basic:
+		a, ok := actual.(*Basic)
+		if !ok {
+			s.Fail(fmt.Sprintf("expected type Basic but found %T for case %s", actual, name))
+		}
+
+		s.Equal(e.Name, a.Name, fmt.Sprintf("both are basic types: %s", name))
+		return
+	case *Named:
+		a, ok := actual.(*Named)
+		if !ok {
+			s.Fail(fmt.Sprintf("expected type Named but found %T for case %s", actual, name))
+		}
+
+		s.Equal(e.Package, a.Package, fmt.Sprintf("package for %s", name))
+		s.Equal(e.Name, a.Name, fmt.Sprintf("name for %s", name))
+		return
+	case *Map:
+		a, ok := actual.(*Map)
+		if !ok {
+			s.Fail(fmt.Sprintf("expected type Map but found %T for case %s", actual, name))
+		}
+
+		s.assertType(e.Key, a.Key, fmt.Sprintf("key for %s", name))
+		s.assertType(e.Value, a.Value, fmt.Sprintf("value for %s", name))
+		return
+	}
+}
+
 func (s *TransformerSuite) assertField(f *Field, name string, typ Type) {
 	s.Equal(f.Name, name)
-	s.Equal(f.Type, typ)
+	s.assertType(f.Type, typ, name)
+}
+
+// assertFieldToField compares name, type and options of the given field
+func (s *TransformerSuite) assertFieldToField(expected, actual *Field, name string) {
+	s.Equal(expected.Name, actual.Name, fmt.Sprintf("Name in %s", name))
+	s.assertType(expected.Type, actual.Type, fmt.Sprintf("Type in %s", name))
+	s.Equal(expected.Repeated, actual.Repeated, fmt.Sprintf("Repeated in %s", name))
+	s.Equal(expected.Options, actual.Options, fmt.Sprintf("Options in %s", name))
 }
 
 func (s *TransformerSuite) assertEnumVal(v *EnumValue, name string, val uint) {
 	s.Equal(name, v.Name)
 	s.Equal(val, v.Value)
+}
+
+func (s *TransformerSuite) assertSource(typ Type, src scanner.Type) {
+	switch t := typ.(type) {
+	case *Named:
+		s.Equal(src, t.Source())
+		return
+	case *Map:
+		s.Equal(src, t.Source())
+		return
+	}
 }
 
 func TestTransformer(t *testing.T) {
@@ -577,6 +676,11 @@ func TestTransformer(t *testing.T) {
 
 func repeated(t scanner.Type) scanner.Type {
 	t.SetRepeated(true)
+	return t
+}
+
+func nullable(t scanner.Type) scanner.Type {
+	t.SetNullable(true)
 	return t
 }
 

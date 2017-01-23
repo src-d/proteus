@@ -55,31 +55,31 @@ const expectedFuncNotGenerated = `func (s *FooServer) DoFoo(ctx context.Context,
 
 const expectedFuncGenerated = `func (s *FooServer) DoFoo(ctx context.Context, in *FooRequest) (result *FooResponse, err error) {
 	result = new(FooResponse)
-	result.Result1 = DoFoo(in.Arg1, in.Arg2, in.Arg3)
+	result.Result1, result.Result2, result.Result3 = DoFoo(in.Arg1, in.Arg2, in.Arg3)
 	return
 }`
 
 const expectedFuncGeneratedVariadic = `func (s *FooServer) DoFoo(ctx context.Context, in *FooRequest) (result *FooResponse, err error) {
 	result = new(FooResponse)
-	result.Result1 = DoFoo(in.Arg1, in.Arg2, in.Arg3...)
+	result.Result1, result.Result2, result.Result3 = DoFoo(in.Arg1, in.Arg2, in.Arg3...)
 	return
 }`
 
 const expectedFuncGeneratedWithError = `func (s *FooServer) DoFoo(ctx context.Context, in *FooRequest) (result *FooResponse, err error) {
 	result = new(FooResponse)
-	result.Result1, err = DoFoo(in.Arg1, in.Arg2, in.Arg3)
+	result.Result1, result.Result2, result.Result3, err = DoFoo(in.Arg1, in.Arg2, in.Arg3)
 	return
 }`
 
 const expectedMethod = `func (s *FooServer) Fooer_DoFoo(ctx context.Context, in *FooRequest) (result *FooResponse, err error) {
 	result = new(FooResponse)
-	result.Result1, err = s.Fooer.DoFoo(in.Arg1, in.Arg2, in.Arg3)
+	result.Result1, result.Result2, result.Result3, err = s.Fooer.DoFoo(in.Arg1, in.Arg2, in.Arg3)
 	return
 }`
 
 const expectedMethodExternalInput = `func (s *FooServer) T_Foo(ctx context.Context, in *ast.BlockStmt) (result *T_FooResponse, err error) {
 	result = new(T_FooResponse)
-	result.Result1 = s.T.Foo(in)
+	_ = s.T.Foo(in)
 	return
 }`
 
@@ -191,12 +191,50 @@ func (s *RPCSuite) TestDeclMethod() {
 	proto := &protobuf.Package{
 		Messages: []*protobuf.Message{
 			&protobuf.Message{
-				Name:   "FooRequest",
-				Fields: make([]*protobuf.Field, 3),
+				Name: "FooRequest",
+				Fields: []*protobuf.Field{
+					&protobuf.Field{
+						Name:     "FirstField",
+						Pos:      1,
+						Repeated: false,
+						Type:     protobuf.NewBasic("int64"),
+					},
+					&protobuf.Field{
+						Name:     "SecondField",
+						Pos:      2,
+						Repeated: false,
+						Type:     protobuf.NewBasic("string"),
+					},
+					&protobuf.Field{
+						Name:     "ThirdField",
+						Pos:      3,
+						Repeated: false,
+						Type:     protobuf.NewBasic("string"),
+					},
+				},
 			},
 			&protobuf.Message{
-				Name:   "FooResponse",
-				Fields: make([]*protobuf.Field, 1),
+				Name: "FooResponse",
+				Fields: []*protobuf.Field{
+					&protobuf.Field{
+						Name:     "PrimerField",
+						Pos:      1,
+						Repeated: false,
+						Type:     protobuf.NewBasic("int64"),
+					},
+					&protobuf.Field{
+						Name:     "SegundoField",
+						Pos:      2,
+						Repeated: false,
+						Type:     protobuf.NewBasic("string"),
+					},
+					&protobuf.Field{
+						Name:     "TercerField",
+						Pos:      3,
+						Repeated: false,
+						Type:     protobuf.NewBasic("string"),
+					},
+				},
 			},
 			&protobuf.Message{
 				Name:   "T_FooResponse",
@@ -224,7 +262,7 @@ func (s *RPCSuite) TestDeclMethod() {
 const expectedGeneratedFile = `package subpkg
 
 import (
-	"context"
+	"golang.org/x/net/context"
 )
 
 type subpkgServiceServer struct {

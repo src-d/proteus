@@ -5,6 +5,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/src-d/proteus/report"
 	"github.com/src-d/proteus/scanner"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -102,6 +103,21 @@ func (s *ResolverSuite) TestIsCustomType() {
 	}
 }
 
+func (s *ResolverSuite) TestAliasToRepeatedFieldWarning() {
+	report.TestMode()
+
+	aliasOf := scanner.NewNamed("", "alias")
+	aliasOf.SetRepeated(true)
+	info := &packagesInfo{
+		aliases: map[string]scanner.Type{"named": aliasOf},
+	}
+	typ := scanner.NewNamed("", "named")
+	s.Nil(s.r.resolveType(typ, info))
+	s.Len(report.MessageStack(), 1, "it contains one message")
+
+	report.EndTestMode()
+}
+
 func (s *ResolverSuite) TestResolve() {
 	sc, err := scanner.New(projectPath("fixtures"), projectPath("fixtures/subpkg"))
 	s.Nil(err)
@@ -121,9 +137,17 @@ func (s *ResolverSuite) TestResolve() {
 
 	foo := pkg.Structs[1]
 	aliasedType := foo.Fields[len(foo.Fields)-1].Type
-	s.True(aliasedType.IsRepeated(), "Aliased type should be repeated")
-	basic, ok := aliasedType.(*scanner.Basic)
-	s.True(ok, "Aliased should be a basic type")
+	// Change when repeated aliases are supported
+	s.False(aliasedType.IsRepeated(), "Aliased type should not be repeated")
+	aliasType, ok := aliasedType.(*scanner.Alias)
+	s.True(ok, "Aliased should be a alias type")
+
+	aliasTypeType, ok := aliasType.Type.(*scanner.Named)
+	s.True(ok, "Alias is a named type")
+	s.Equal("MyInt", aliasTypeType.Name, "alias name")
+
+	basic, ok := aliasType.Underlying.(*scanner.Basic)
+	s.True(ok, "Aliased type is basic")
 	s.Equal("int", basic.Name)
 
 	s.Equal(1, len(pkgs[1].Structs), "a struct of subpkg should have been removed")
@@ -146,7 +170,7 @@ func (s *ResolverSuite) TestResolve() {
 			scanner.NewBasic("int32"),
 		},
 		Output: []scanner.Type{
-			scanner.NewNamed(projectPath("fixtures/subpkg"), "Point"),
+			nullable(scanner.NewNamed(projectPath("fixtures/subpkg"), "Point")),
 		},
 		Receiver: scanner.NewNamed(projectPath("fixtures/subpkg"), "Point"),
 	}, findFuncByName("GeneratedMethod", pkgs[1].Funcs))
@@ -157,9 +181,9 @@ func (s *ResolverSuite) TestResolve() {
 			scanner.NewBasic("bool"),
 		},
 		Output: []scanner.Type{
-			scanner.NewNamed(projectPath("fixtures/subpkg"), "Point"),
+			nullable(scanner.NewNamed(projectPath("fixtures/subpkg"), "Point")),
 		},
-		Receiver: scanner.NewNamed(projectPath("fixtures/subpkg"), "Point"),
+		Receiver: nullable(scanner.NewNamed(projectPath("fixtures/subpkg"), "Point")),
 	}, findFuncByName("GeneratedMethodOnPointer", pkgs[1].Funcs))
 
 	s.Equal(&scanner.Func{
@@ -168,7 +192,7 @@ func (s *ResolverSuite) TestResolve() {
 		Output: []scanner.Type{
 			scanner.NewBasic("string"),
 		},
-		Receiver: scanner.NewNamed(projectPath("fixtures/subpkg"), "MyContainer"),
+		Receiver: nullable(scanner.NewNamed(projectPath("fixtures/subpkg"), "MyContainer")),
 	}, findFuncByName("Name", pkgs[1].Funcs))
 }
 
@@ -208,4 +232,9 @@ func findFuncByName(name string, fns []*scanner.Func) *scanner.Func {
 	}
 
 	return nil
+}
+
+func nullable(t scanner.Type) scanner.Type {
+	t.SetNullable(true)
+	return t
 }

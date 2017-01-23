@@ -130,7 +130,16 @@ func (r *Resolver) resolveType(typ scanner.Type, info *packagesInfo) (result sca
 
 		alias := info.aliasOf(t)
 		if alias != nil {
-			return alias
+			if alias.IsRepeated() {
+				report.Warn(
+					"type %q of package %s is an alias for %s that is marked as repeated. Alias for repeated fields are not currently supported, this field will be ignored.",
+					t.Name,
+					t.Path,
+					alias.String(),
+				)
+				return nil
+			}
+			return scanner.NewAlias(t, alias)
 		}
 
 		if info.isStruct(t.String()) {

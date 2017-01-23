@@ -87,7 +87,17 @@ func (s *Scanner) Scan() ([]*Package, error) {
 }
 
 func (s *Scanner) scanPackage(p string) (*Package, error) {
-	pkg, err := s.importer.Import(p)
+	pkg, err := s.importer.ImportWithFilters(
+		p,
+		source.FileFilters{
+			func(pkg, file string, typ source.FileType) bool {
+				return !strings.HasSuffix(file, ".pb.go")
+			},
+			func(pkg, file string, typ source.FileType) bool {
+				return !strings.HasSuffix(file, ".proteus.go")
+			},
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -186,6 +196,7 @@ func scanType(typ types.Type) (t Type) {
 		t.SetRepeated(true)
 	case *types.Pointer:
 		t = scanType(u.Elem())
+		t.SetNullable(true)
 	case *types.Map:
 		key := scanType(u.Key())
 		val := scanType(u.Elem())

@@ -21,6 +21,7 @@ func TestMode() {
 
 func EndTestMode() {
 	testing = false
+	ResetTestModeStack()
 }
 
 func ResetTestModeStack() {

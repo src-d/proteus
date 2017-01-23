@@ -1,6 +1,9 @@
 package example
 
-import "time"
+import (
+	"math/rand"
+	"time"
+)
 
 //go:generate proteus -p github.com/src-d/proteus/example -f $GOPATH/src/github.com/src-d/proteus/example/protos
 
@@ -8,9 +11,11 @@ import "time"
 type Product struct {
 	Model
 
-	Name       string
-	Price      float64
-	Tags       Tags
+	Name  string
+	Price float64
+
+	// This is not yet supported
+	//	Tags       Tags
 	CategoryID int64
 	// Category will not be generated because we explicitly said so.
 	Category Category `proteus:"-"`
@@ -20,8 +25,9 @@ type Product struct {
 type Category struct {
 	Model
 
-	Name    string
-	Type    Type
+	Name string
+	// Enums are not fully supported yet
+	//Type    Type
 	Color   Color
 	Options CategoryOptions
 }
@@ -70,4 +76,21 @@ type User struct {
 	Username string
 	Password string
 	Email    string
+}
+
+//proteus:generate
+func RandomNumber(mean, std float64) float64 {
+	return rand.NormFloat64()*std + mean
+}
+
+//proteus:generate
+func RandomCategory() CategoryOptions {
+	return CategoryOptions{
+		ShowPrices: RandomBool(),
+		CanBuy:     RandomBool(),
+	}
+}
+
+func RandomBool() bool {
+	return rand.Float32() < 0.5
 }

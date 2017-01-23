@@ -137,12 +137,18 @@ func (t *Transformer) createMessageFromTypes(pkg *Package, name string, types []
 	msg := &Message{Name: name}
 	for i, typ := range types {
 		f := t.transformField(pkg, msg, &scanner.Field{
-			Name: fmt.Sprintf("%s%d", fieldPrefix, i+1),
+			Name: fmt.Sprintf("%s%d", capitalize(fieldPrefix), i+1),
 			Type: typ,
 		}, i+1)
-		msg.Fields = append(msg.Fields, f)
+		if f != nil {
+			msg.Fields = append(msg.Fields, f)
+		}
 	}
 	return msg
+}
+
+func capitalize(s string) string {
+	return strings.ToUpper(s[0:1]) + s[1:len(s)]
 }
 
 func (t *Transformer) transformEnum(e *scanner.Enum) *Enum {
@@ -174,10 +180,9 @@ func (t *Transformer) transformStruct(pkg *Package, s *scanner.Struct) *Message 
 		if field == nil {
 			msg.Reserve(uint(i) + 1)
 			report.Warn("field %q of struct %q has an invalid type, ignoring field but reserving its position", f.Name, s.Name)
-			continue
+		} else {
+			msg.Fields = append(msg.Fields, field)
 		}
-
-		msg.Fields = append(msg.Fields, field)
 	}
 
 	return msg
@@ -226,6 +231,10 @@ func defaultOptionsForStructField(field *scanner.Field) Options {
 		opts["(gogoproto.customname)"] = NewStringValue(field.Name)
 	}
 
+	if !field.Type.IsNullable() {
+		opts["(gogoproto.nullable)"] = NewLiteralValue("false")
+	}
+
 	return opts
 }
 
@@ -241,28 +250,58 @@ func (t *Transformer) transformType(pkg *Package, typ scanner.Type, msg *Message
 		if protoType != nil {
 			pkg.Import(protoType)
 			protoType.Decorate(pkg, msg, field)
-			return protoType.Type()
+			n := protoType.Type()
+			n.SetSource(ty)
+			return n
 		}
 
 		pkg.ImportFromPath(ty.Path)
-		return NewNamed(toProtobufPkg(ty.Path), ty.Name)
+		n := NewNamed(toProtobufPkg(ty.Path), ty.Name)
+		n.SetSource(ty)
+		return n
 	case *scanner.Basic:
 		protoType := t.findMapping(ty.Name)
 		if protoType != nil {
 			pkg.Import(protoType)
 			protoType.Decorate(pkg, msg, field)
-			return protoType.Type()
+			b := protoType.Type()
+			b.SetSource(ty)
+			return b
 		}
 
 		report.Warn("basic type %q is not defined in the mappings, ignoring", ty.Name)
 	case *scanner.Map:
-		return NewMap(
+		m := NewMap(
 			t.transformType(pkg, ty.Key, msg, field),
 			t.transformType(pkg, ty.Value, msg, field),
 		)
+		m.SetSource(ty)
+		return m
+	case *scanner.Alias:
+		n := NewAlias(
+			t.transformType(pkg, ty.Type, msg, field),
+			t.transformType(pkg, ty.Underlying, msg, field),
+		)
+		n.SetSource(ty)
+		if field.Options == nil {
+			field.Options = make(Options)
+		}
+		field.Options["(gogoproto.casttype)"] = NewStringValue(castType(pkg, n.Type))
+		return n
 	}
 
 	return nil
+}
+
+func castType(pkg *Package, typ Type) string {
+	switch t := typ.Source().(type) {
+	case *scanner.Named:
+		if pkg.Path == t.Path {
+			return t.Name
+		}
+		return t.TypeString()
+	}
+	return typ.Source().TypeString()
 }
 
 func (t *Transformer) findMapping(name string) *ProtoType {

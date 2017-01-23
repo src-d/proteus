@@ -49,12 +49,12 @@ func TestScanType(t *testing.T) {
 		{
 			"basic behind a pointer",
 			types.NewPointer(types.Typ[types.Int]),
-			NewBasic("int"),
+			nullable(NewBasic("int")),
 		},
 		{
 			"named behind a pointer",
 			types.NewPointer(newNamedWithUnderlying("/foo/bar", "Bar", nil)),
-			NewNamed("/foo/bar", "Bar"),
+			nullable(NewNamed("/foo/bar", "Bar")),
 		},
 		{
 			"map of basic and named",
@@ -66,6 +66,16 @@ func TestScanType(t *testing.T) {
 				NewBasic("int"),
 				NewNamed("/foo/bar", "Bar"),
 			),
+		},
+		{
+			"array of pointers",
+			types.NewArray(types.NewPointer(types.Typ[types.Int]), 8),
+			nullable(repeated(NewBasic("int"))),
+		},
+		{
+			"slice of pointers",
+			types.NewSlice(types.NewPointer(types.Typ[types.Int])),
+			nullable(repeated(NewBasic("int"))),
 		},
 		{
 			"struct",
@@ -513,6 +523,11 @@ func mkParam(name string, typ types.Type) *types.Var {
 
 func repeated(t Type) Type {
 	t.SetRepeated(true)
+	return t
+}
+
+func nullable(t Type) Type {
+	t.SetNullable(true)
 	return t
 }
 

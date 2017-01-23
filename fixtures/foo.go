@@ -15,12 +15,12 @@ type Foo struct {
 	Timestamp time.Time
 	External  url.URL
 	Duration  time.Duration
-	Aliased   IntList
+	Aliased   MyInt
 }
 
 // IntList ...
 //proteus:generate
-type IntList []int
+type MyInt int
 
 // Qux ...
 type Qux struct {
