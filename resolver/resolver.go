@@ -26,6 +26,7 @@ func New() *Resolver {
 		customTypes: map[string]struct{}{
 			"time.Time":     {},
 			"time.Duration": {},
+			"error":         {},
 		},
 	}
 }
@@ -48,11 +49,47 @@ func (r *Resolver) isCustomType(n *scanner.Named) bool {
 
 func (r *Resolver) resolvePackage(p *scanner.Package, info *packagesInfo) {
 	for _, s := range p.Structs {
-		s.Fields = r.resolveStructFields(s.Fields, info)
+		r.resolveStruct(s, info)
 	}
+
+	var funcs = make([]*scanner.Func, 0, len(p.Funcs))
+	for _, f := range p.Funcs {
+		if r.resolveFunc(f, info) {
+			funcs = append(funcs, f)
+		} else {
+			report.Warn("func %s had an unresolvable type and it will not be generated", f.Name)
+		}
+	}
+	p.Funcs = funcs
 
 	r.removeUnmarkedStructs(p, info)
 	p.Resolved = true
+}
+
+func (r *Resolver) resolveFunc(f *scanner.Func, info *packagesInfo) bool {
+	f.Input = r.resolveTypeList(f.Input, info)
+	if f.Input == nil {
+		return false
+	}
+
+	f.Output = r.resolveTypeList(f.Output, info)
+	if f.Output == nil {
+		return false
+	}
+
+	return true
+}
+
+func (r *Resolver) resolveTypeList(types []scanner.Type, info *packagesInfo) []scanner.Type {
+	var result = make([]scanner.Type, 0, len(types))
+	for _, t := range types {
+		typ := r.resolveType(t, info)
+		if typ == nil {
+			return nil
+		}
+		result = append(result, typ)
+	}
+	return result
 }
 
 func (r *Resolver) removeUnmarkedStructs(p *scanner.Package, info *packagesInfo) {
@@ -66,17 +103,17 @@ func (r *Resolver) removeUnmarkedStructs(p *scanner.Package, info *packagesInfo)
 	p.Structs = structs
 }
 
-func (r *Resolver) resolveStructFields(fields []*scanner.Field, info *packagesInfo) []*scanner.Field {
-	var result = make([]*scanner.Field, 0, len(fields))
+func (r *Resolver) resolveStruct(s *scanner.Struct, info *packagesInfo) {
+	var result = make([]*scanner.Field, 0, len(s.Fields))
 
-	for _, f := range fields {
+	for _, f := range s.Fields {
 		if typ := r.resolveType(f.Type, info); typ != nil {
 			f.Type = typ
 			result = append(result, f)
 		}
 	}
 
-	return result
+	s.Fields = result
 }
 
 func (r *Resolver) resolveType(typ scanner.Type, info *packagesInfo) (result scanner.Type) {
@@ -93,7 +130,16 @@ func (r *Resolver) resolveType(typ scanner.Type, info *packagesInfo) (result sca
 
 		alias := info.aliasOf(t)
 		if alias != nil {
-			return alias
+			if alias.IsRepeated() {
+				report.Warn(
+					"type %q of package %s is an alias for %s that is marked as repeated. Alias for repeated fields are not currently supported, this field will be ignored.",
+					t.Name,
+					t.Path,
+					alias.String(),
+				)
+				return nil
+			}
+			return scanner.NewAlias(t, alias)
 		}
 
 		if info.isStruct(t.String()) {

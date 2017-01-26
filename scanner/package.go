@@ -14,6 +14,7 @@ type Package struct {
 	Name     string
 	Structs  []*Struct
 	Enums    []*Enum
+	Funcs    []*Func
 	Aliases  map[string]Type
 }
 
@@ -40,18 +41,28 @@ func (p *Package) collectEnums(ctx *context) {
 // the conversion from Go to protobuf.
 // All types can be repeated (or not).
 type Type interface {
+	fmt.Stringer
 	SetRepeated(bool)
 	IsRepeated() bool
+	SetNullable(bool)
+	IsNullable() bool
+	// TypeString returns a string representing the final type.
+	// Though this might seem that this should be just String, for Alias types
+	// both representations are different: a string representation of the final
+	// type, this is just the alias, while string contains also the underlying type.
+	TypeString() string
 }
 
 // BaseType contains the common fields for all the types.
 type BaseType struct {
 	Repeated bool
+	Nullable bool
 }
 
 func newBaseType() *BaseType {
 	return &BaseType{
 		Repeated: false,
+		Nullable: false,
 	}
 }
 
@@ -60,6 +71,18 @@ func (t *BaseType) IsRepeated() bool { return t.Repeated }
 
 // SetRepeated sets the type as repeated or not repeated.
 func (t *BaseType) SetRepeated(v bool) { t.Repeated = v }
+
+// IsNullable reports wether the type is a pointer or not.
+func (t *BaseType) IsNullable() bool { return t.Nullable }
+
+// SetNullable sets the type as pointer.
+func (t *BaseType) SetNullable(v bool) { t.Nullable = v }
+
+// TypeString returns a string representation for the type casting
+func (t *BaseType) TypeString() string { panic("not implemented") }
+
+// String returns a string representation for the type
+func (t *BaseType) String() string { panic("not implemented") }
 
 // Basic is a basic type, which only is identified by its name.
 type Basic struct {
@@ -75,6 +98,17 @@ func NewBasic(name string) Type {
 	}
 }
 
+// Basic types though cannot be nullable, they are considered so in protobuf.
+func (b Basic) IsNullable() bool { return true }
+
+func (b Basic) String() string {
+	return b.Name
+}
+
+func (b Basic) TypeString() string {
+	return b.String()
+}
+
 // Named is non-basic type identified by a name on some package.
 type Named struct {
 	*BaseType
@@ -83,7 +117,14 @@ type Named struct {
 }
 
 func (n Named) String() string {
+	if n.Path == "" {
+		return n.Name
+	}
 	return fmt.Sprintf("%s.%s", n.Path, n.Name)
+}
+
+func (n Named) TypeString() string {
+	return n.String()
 }
 
 // NewNamed creates a new named type given its package path and name.
@@ -93,6 +134,31 @@ func NewNamed(path, name string) Type {
 		path,
 		name,
 	}
+}
+
+// Alias represents a type declaration from a type to another type
+type Alias struct {
+	*BaseType
+	// Type represents the type being declared
+	Type Type
+	// Underlying represent the aliased type.
+	Underlying Type
+}
+
+func NewAlias(typ, underlying Type) Type {
+	return &Alias{
+		Type:       typ,
+		Underlying: underlying,
+	}
+}
+
+func (a Alias) IsNullable() bool { return a.Type.IsNullable() || a.Underlying.IsNullable() }
+func (a Alias) IsRepeated() bool { return a.Type.IsRepeated() || a.Underlying.IsRepeated() }
+func (a Alias) String() string {
+	return fmt.Sprintf("type %s %s", a.Type.String(), a.Underlying.String())
+}
+func (a Alias) TypeString() string {
+	return a.Type.TypeString()
 }
 
 // Map is a map type with a key and a value type.
@@ -109,6 +175,14 @@ func NewMap(key, val Type) Type {
 		key,
 		val,
 	}
+}
+
+func (m Map) String() string {
+	return fmt.Sprintf("map[%s]%s", m.Key.String(), m.Value.String())
+}
+
+func (m Map) TypeString() string {
+	return m.String()
 }
 
 // Enum consists of a list of possible values.
@@ -139,4 +213,16 @@ func (s *Struct) HasField(name string) bool {
 type Field struct {
 	Name string
 	Type Type
+}
+
+// Func is either a function or a method. Receiver will be nil in functions,
+// otherwise it is a method.
+type Func struct {
+	Name string
+	// Receiver will not be nil if it's a method.
+	Receiver Type
+	Input    []Type
+	Output   []Type
+	// IsVariadic will be true if the last input parameter is variadic.
+	IsVariadic bool
 }

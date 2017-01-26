@@ -6,9 +6,9 @@ It has some entities like the ones you could have on a database.
 To generate the `.proto` you can use the `proteus` binary:
 
 ```
-proteus -p github.com/src-d/proteus/example \
-        -f $GOPATH/src/github.com/src-d/proteus/example/protos \
-        --verbose
+proteus proto -p github.com/src-d/proteus/example \
+              -f $GOPATH/src/github.com/src-d/proteus/example/protos \
+              --verbose
 ```
 
 The generated file will be in:

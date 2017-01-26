@@ -14,3 +14,11 @@ test:
 			rm $(COVERAGE_PROFILE); \
 		fi; \
 	done;
+clean_example:
+	- rm example/**.pb.go
+	- rm example/**.proteus.go
+reinstall: clean_example
+	- rm `which proteus`
+	- go install ./cli/proteus
+regenerate:
+	- make -C example regenerate

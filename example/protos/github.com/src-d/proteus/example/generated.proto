@@ -1,40 +1,60 @@
 syntax = "proto3";
 package github.com.srcd.proteus.example;
 
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "example";
 
 message Category {
-	int64 id = 1;
-	google.protobuf.Timestamp created_at = 2;
-	google.protobuf.Timestamp updated_at = 3;
-	google.protobuf.Timestamp deleted_at = 4;
+	option (gogoproto.typedecl) = false;
+	int64 id = 1 [(gogoproto.customname) = "ID"];
+	google.protobuf.Timestamp created_at = 2 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+	google.protobuf.Timestamp updated_at = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+	google.protobuf.Timestamp deleted_at = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 	string name = 5;
-	github.com.srcd.proteus.example.Type type = 6;
-	string color = 7;
-	github.com.srcd.proteus.example.CategoryOptions options = 8;
+	string color = 6 [(gogoproto.casttype) = "Color"];
+	github.com.srcd.proteus.example.CategoryOptions options = 7 [(gogoproto.nullable) = false];
 }
 
 message CategoryOptions {
+	option (gogoproto.typedecl) = false;
 	bool show_prices = 1;
 	bool can_buy = 2;
 }
 
 message Product {
-	int64 id = 1;
-	google.protobuf.Timestamp created_at = 2;
-	google.protobuf.Timestamp updated_at = 3;
-	google.protobuf.Timestamp deleted_at = 4;
+	option (gogoproto.typedecl) = false;
+	int64 id = 1 [(gogoproto.customname) = "ID"];
+	google.protobuf.Timestamp created_at = 2 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+	google.protobuf.Timestamp updated_at = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+	google.protobuf.Timestamp deleted_at = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 	string name = 5;
 	double price = 6;
-	repeated string tags = 7;
-	int64 category_id = 8;
+	int64 category_id = 7 [(gogoproto.customname) = "CategoryID"];
+}
+
+message RandomCategoryRequest {
+}
+
+message RandomNumberRequest {
+	double arg1 = 1;
+	double arg2 = 2;
+}
+
+message RandomNumberResponse {
+	double result1 = 1;
 }
 
 enum Type {
+	option (gogoproto.enumdecl) = false;
 	PUBLIC = 0;
 	PRIVATE = 1;
 	CUSTOM = 2;
+}
+
+service ExampleService {
+	rpc RandomCategory (github.com.srcd.proteus.example.RandomCategoryRequest) returns (github.com.srcd.proteus.example.CategoryOptions);
+	rpc RandomNumber (github.com.srcd.proteus.example.RandomNumberRequest) returns (github.com.srcd.proteus.example.RandomNumberResponse);
 }
 

@@ -2,12 +2,15 @@ package protobuf
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"unicode"
 
 	"golang.org/x/text/runes"
 	"golang.org/x/text/transform"
 	"golang.org/x/text/unicode/norm"
+
+	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 
 	"github.com/src-d/proteus/report"
 	"github.com/src-d/proteus/scanner"
@@ -43,6 +46,7 @@ func (t *Transformer) Transform(p *scanner.Package) *Package {
 	pkg := &Package{
 		Name:    toProtobufPkg(p.Path),
 		Path:    p.Path,
+		Imports: []string{"github.com/gogo/protobuf/gogoproto/gogo.proto"},
 		Options: defaultOptionsForPackage(p),
 	}
 
@@ -56,97 +60,285 @@ func (t *Transformer) Transform(p *scanner.Package) *Package {
 		pkg.Enums = append(pkg.Enums, enum)
 	}
 
+	names := buildNameSet(p)
+	for _, f := range p.Funcs {
+		rpc := t.transformFunc(pkg, f, names)
+		if rpc != nil {
+			pkg.RPCs = append(pkg.RPCs, rpc)
+		}
+	}
+
 	return pkg
 }
 
+func (t *Transformer) transformFunc(pkg *Package, f *scanner.Func, names nameSet) *RPC {
+	var (
+		name         = f.Name
+		receiverName string
+	)
+
+	if f.Receiver != nil {
+		n, ok := f.Receiver.(*scanner.Named)
+		if !ok {
+			report.Warn("invalid receiver type for func %s", f.Name)
+			return nil
+		}
+
+		name = fmt.Sprintf("%s_%s", n.Name, name)
+		receiverName = n.Name
+	}
+
+	output, hasError := removeLastError(f.Output)
+	rpc := &RPC{
+		Name:       name,
+		Recv:       receiverName,
+		Method:     f.Name,
+		HasError:   hasError,
+		IsVariadic: f.IsVariadic,
+		Input:      t.transformInputTypes(pkg, f.Input, names, name),
+		Output:     t.transformOutputTypes(pkg, output, names, name),
+	}
+	if rpc.Input == nil || rpc.Output == nil {
+		return nil
+	}
+
+	return rpc
+}
+
+func (t *Transformer) transformInputTypes(pkg *Package, types []scanner.Type, names nameSet, name string) Type {
+	return t.transformTypeList(pkg, types, names, name, "Request", "arg")
+}
+
+func (t *Transformer) transformOutputTypes(pkg *Package, types []scanner.Type, names nameSet, name string) Type {
+	return t.transformTypeList(pkg, types, names, name, "Response", "result")
+}
+
+func (t *Transformer) transformTypeList(pkg *Package, types []scanner.Type, names nameSet, name, msgNameSuffix, msgFieldPrefix string) Type {
+	// the type list should be wrapped in a separate message if:
+	// - there is more than one element
+	// - there is one element and it is repeated, as this is not supported in protobuf
+	// - there is one element and it is not a message, as protobuf expects messages as input/output
+	if len(types) != 1 || types[0].IsRepeated() || !isNamed(types[0]) {
+		msgName := name + msgNameSuffix
+		if _, ok := names[msgName]; ok {
+			report.Warn("tried to register message %s, but there is already a message with that name. RPC %s will not be generated", msgName, name)
+			return nil
+		}
+
+		msg := t.createMessageFromTypes(pkg, msgName, types, msgFieldPrefix)
+		pkg.Messages = append(pkg.Messages, msg)
+		return NewGeneratedNamed(toProtobufPkg(pkg.Path), msgName)
+	}
+
+	return t.transformType(pkg, types[0], &Message{}, &Field{})
+}
+
+func (t *Transformer) createMessageFromTypes(pkg *Package, name string, types []scanner.Type, fieldPrefix string) *Message {
+	msg := &Message{Name: name}
+	for i, typ := range types {
+		f := t.transformField(pkg, msg, &scanner.Field{
+			Name: fmt.Sprintf("%s%d", capitalize(fieldPrefix), i+1),
+			Type: typ,
+		}, i+1)
+		if f != nil {
+			msg.Fields = append(msg.Fields, f)
+		}
+	}
+	return msg
+}
+
+func capitalize(s string) string {
+	return strings.ToUpper(s[0:1]) + s[1:len(s)]
+}
+
 func (t *Transformer) transformEnum(e *scanner.Enum) *Enum {
-	enum := &Enum{Name: e.Name}
+	enum := &Enum{
+		Name:    e.Name,
+		Options: defaultOptionsForScannedEnum(e),
+	}
 
 	for i, v := range e.Values {
 		enum.Values.Add(toUpperSnakeCase(v), uint(i), nil)
 	}
-
 	return enum
 }
 
+func defaultOptionsForScannedEnum(e *scanner.Enum) Options {
+	return Options{
+		"(gogoproto.enumdecl)": NewLiteralValue("false"),
+	}
+}
+
 func (t *Transformer) transformStruct(pkg *Package, s *scanner.Struct) *Message {
-	msg := &Message{Name: s.Name}
+	msg := &Message{
+		Name:    s.Name,
+		Options: defaultOptionsForScannedMessage(s),
+	}
 
 	for i, f := range s.Fields {
-		field := t.transformField(pkg, f, i+1)
+		field := t.transformField(pkg, msg, f, i+1)
 		if field == nil {
 			msg.Reserve(uint(i) + 1)
 			report.Warn("field %q of struct %q has an invalid type, ignoring field but reserving its position", f.Name, s.Name)
-			continue
+		} else {
+			msg.Fields = append(msg.Fields, field)
 		}
-
-		msg.Fields = append(msg.Fields, field)
 	}
 
 	return msg
 }
 
-func (t *Transformer) transformField(pkg *Package, field *scanner.Field, pos int) *Field {
-	var typ Type
-	var repeated = field.Type.IsRepeated()
+func defaultOptionsForScannedMessage(s *scanner.Struct) Options {
+	return Options{
+		"(gogoproto.typedecl)": NewLiteralValue("false"),
+	}
+}
+
+func (t *Transformer) transformField(pkg *Package, msg *Message, field *scanner.Field, pos int) *Field {
+	var (
+		typ      Type
+		repeated = field.Type.IsRepeated()
+	)
+
+	f := &Field{
+		Name:     toLowerSnakeCase(field.Name),
+		Options:  defaultOptionsForStructField(field),
+		Pos:      pos,
+		Repeated: repeated,
+	}
 
 	// []byte is the only repeated type that maps to
 	// a non-repeated type in protobuf, so we handle
 	// it a bit differently.
 	if isByteSlice(field.Type) {
 		typ = NewBasic("bytes")
-		repeated = false
+		f.Repeated = false
 	} else {
-		typ = t.transformType(pkg, field.Type)
+		typ = t.transformType(pkg, field.Type, msg, f)
 		if typ == nil {
 			return nil
 		}
 	}
 
-	return &Field{
-		Name:     toLowerSnakeCase(field.Name),
-		Pos:      pos,
-		Type:     typ,
-		Repeated: repeated,
-	}
+	f.Type = typ
+
+	return f
 }
 
-func (t *Transformer) transformType(pkg *Package, typ scanner.Type) Type {
+func defaultOptionsForStructField(field *scanner.Field) Options {
+	opts := make(Options)
+	if generator.CamelCase(toLowerSnakeCase(field.Name)) != field.Name {
+		opts["(gogoproto.customname)"] = NewStringValue(field.Name)
+	}
+
+	if !field.Type.IsNullable() {
+		opts["(gogoproto.nullable)"] = NewLiteralValue("false")
+	}
+
+	return opts
+}
+
+func (t *Transformer) transformType(pkg *Package, typ scanner.Type, msg *Message, field *Field) Type {
+	if isError(typ) {
+		report.Error("error type is not supported")
+		return nil
+	}
+
 	switch ty := typ.(type) {
 	case *scanner.Named:
 		protoType := t.findMapping(ty.String())
 		if protoType != nil {
 			pkg.Import(protoType)
-			return protoType.Type()
+			protoType.Decorate(pkg, msg, field)
+			n := protoType.Type()
+			n.SetSource(ty)
+			return n
 		}
 
 		pkg.ImportFromPath(ty.Path)
-		return NewNamed(toProtobufPkg(ty.Path), ty.Name)
+		n := NewNamed(toProtobufPkg(ty.Path), ty.Name)
+		n.SetSource(ty)
+		return n
 	case *scanner.Basic:
 		protoType := t.findMapping(ty.Name)
 		if protoType != nil {
 			pkg.Import(protoType)
-			return protoType.Type()
+			protoType.Decorate(pkg, msg, field)
+			b := protoType.Type()
+			b.SetSource(ty)
+			return b
 		}
 
 		report.Warn("basic type %q is not defined in the mappings, ignoring", ty.Name)
 	case *scanner.Map:
-		return NewMap(
-			t.transformType(pkg, ty.Key),
-			t.transformType(pkg, ty.Value),
+		m := NewMap(
+			t.transformType(pkg, ty.Key, msg, field),
+			t.transformType(pkg, ty.Value, msg, field),
 		)
+		m.SetSource(ty)
+		return m
+	case *scanner.Alias:
+		n := NewAlias(
+			t.transformType(pkg, ty.Type, msg, field),
+			t.transformType(pkg, ty.Underlying, msg, field),
+		)
+		n.SetSource(ty)
+		if field.Options == nil {
+			field.Options = make(Options)
+		}
+		field.Options["(gogoproto.casttype)"] = NewStringValue(castType(pkg, n.Type))
+		return n
 	}
 
 	return nil
 }
 
+func castType(pkg *Package, typ Type) string {
+	switch t := typ.Source().(type) {
+	case *scanner.Named:
+		if pkg.Path == t.Path {
+			return t.Name
+		}
+		return t.TypeString()
+	}
+	return typ.Source().TypeString()
+}
+
 func (t *Transformer) findMapping(name string) *ProtoType {
 	typ := t.mappings[name]
 	if typ == nil {
-		typ = defaultMappings[name]
+		typ = DefaultMappings[name]
+	}
+
+	if typ != nil && typ.Warn != "" {
+		report.Warn(typ.Warn, name)
 	}
 
 	return typ
+}
+
+func removeLastError(types []scanner.Type) ([]scanner.Type, bool) {
+	if len(types) > 0 {
+		ln := len(types)
+		last := types[ln-1]
+		if isError(last) {
+			return types[:ln-1], true
+		}
+	}
+
+	return types, false
+}
+
+func isNamed(typ scanner.Type) bool {
+	_, ok := typ.(*scanner.Named)
+	return ok
+}
+
+func isError(typ scanner.Type) bool {
+	if err, ok := typ.(*scanner.Named); ok {
+		return err.Path == "" && err.Name == "error"
+	}
+	return false
 }
 
 func isByteSlice(typ scanner.Type) bool {
@@ -190,8 +382,25 @@ func toLowerSnakeCase(s string) string {
 func toUpperSnakeCase(s string) string {
 	return strings.ToUpper(toLowerSnakeCase(s))
 }
+
 func defaultOptionsForPackage(p *scanner.Package) Options {
 	return Options{
 		"go_package": NewStringValue(p.Name),
 	}
+}
+
+type nameSet map[string]struct{}
+
+func buildNameSet(pkg *scanner.Package) nameSet {
+	l := make(nameSet)
+
+	for _, e := range pkg.Enums {
+		l[e.Name] = struct{}{}
+	}
+
+	for _, s := range pkg.Structs {
+		l[s.Name] = struct{}{}
+	}
+
+	return l
 }

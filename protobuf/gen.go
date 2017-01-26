@@ -43,6 +43,10 @@ func (g *Generator) Generate(pkg *Package) error {
 		buf.WriteRune('\n')
 	}
 
+	if len(pkg.RPCs) > 0 {
+		writeService(&buf, pkg)
+	}
+
 	return g.writeFile(pkg.Path, buf.Bytes())
 }
 
@@ -150,4 +154,17 @@ func writeFieldOptions(buf *bytes.Buffer, options Options) {
 		buf.WriteString(fmt.Sprintf("%s = %s", opt.Name, opt.Value))
 	}
 	buf.WriteRune(']')
+}
+
+func writeService(buf *bytes.Buffer, pkg *Package) {
+	buf.WriteString(fmt.Sprintf("service %s {\n", pkg.ServiceName()))
+	for _, rpc := range pkg.RPCs {
+		buf.WriteString(fmt.Sprintf(
+			"\trpc %s (%s) returns (%s);\n",
+			rpc.Name,
+			rpc.Input,
+			rpc.Output,
+		))
+	}
+	buf.WriteString("}\n\n")
 }
