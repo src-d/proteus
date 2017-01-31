@@ -22,7 +22,9 @@ import (
 // corresponding type mapping, and then the default mappings to give the user
 // ability to override any kind of type.
 type Transformer struct {
-	mappings TypeMappings
+	mappings  TypeMappings
+	structSet TypeSet
+	enumSet   TypeSet
 }
 
 // NewTransformer creates a new transformer instance.
@@ -39,6 +41,26 @@ func (t *Transformer) SetMappings(m TypeMappings) {
 		return
 	}
 	t.mappings = m
+}
+
+// SetStructSet sets the passed TypeSet as a known list of structs
+func (t *Transformer) SetStructSet(ts TypeSet) {
+	t.structSet = ts
+}
+
+// IsStruct checks if the given pkg path and name is a known struct
+func (t *Transformer) IsStruct(pkg, name string) bool {
+	return t.structSet.Contains(pkg, name)
+}
+
+// IsEnum checks if the given pkg path and name is a known enum
+func (t *Transformer) IsEnum(pkg, name string) bool {
+	return t.enumSet.Contains(pkg, name)
+}
+
+// SetEnumSet sets the passed TypeSet as a known list of enums
+func (t *Transformer) SetEnumSet(ts TypeSet) {
+	t.enumSet = ts
 }
 
 // Transform converts a scanned package to a protobuf package.
@@ -158,14 +180,17 @@ func (t *Transformer) transformEnum(e *scanner.Enum) *Enum {
 	}
 
 	for i, v := range e.Values {
-		enum.Values.Add(toUpperSnakeCase(v), uint(i), nil)
+		enum.Values.Add(toUpperSnakeCase(v), uint(i), Options{
+			"(gogoproto.enumvalue_customname)": NewStringValue(v),
+		})
 	}
 	return enum
 }
 
 func defaultOptionsForScannedEnum(e *scanner.Enum) Options {
 	return Options{
-		"(gogoproto.enumdecl)": NewLiteralValue("false"),
+		"(gogoproto.enumdecl)":            NewLiteralValue("false"),
+		"(gogoproto.goproto_enum_prefix)": NewLiteralValue("false"),
 	}
 }
 
@@ -202,7 +227,7 @@ func (t *Transformer) transformField(pkg *Package, msg *Message, field *scanner.
 
 	f := &Field{
 		Name:     toLowerSnakeCase(field.Name),
-		Options:  defaultOptionsForStructField(field),
+		Options:  defaultOptionsForStructField(t, field),
 		Pos:      pos,
 		Repeated: repeated,
 	}
@@ -225,17 +250,30 @@ func (t *Transformer) transformField(pkg *Package, msg *Message, field *scanner.
 	return f
 }
 
-func defaultOptionsForStructField(field *scanner.Field) Options {
+func defaultOptionsForStructField(t *Transformer, field *scanner.Field) Options {
 	opts := make(Options)
 	if generator.CamelCase(toLowerSnakeCase(field.Name)) != field.Name {
 		opts["(gogoproto.customname)"] = NewStringValue(field.Name)
 	}
 
-	if !field.Type.IsNullable() {
+	if needsNotNullableOption(t, field.Type) {
 		opts["(gogoproto.nullable)"] = NewLiteralValue("false")
 	}
 
 	return opts
+}
+
+func needsNotNullableOption(t *Transformer, typ scanner.Type) bool {
+	isNullable := typ.IsNullable()
+
+	switch ty := typ.(type) {
+	case *scanner.Named:
+		return !isNullable && !t.IsEnum(ty.Path, ty.Name)
+	case *scanner.Alias:
+		return needsNotNullableOption(t, ty.Underlying)
+	}
+
+	return false
 }
 
 func (t *Transformer) transformType(pkg *Package, typ scanner.Type, msg *Message, field *Field) Type {

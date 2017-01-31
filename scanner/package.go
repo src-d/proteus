@@ -51,6 +51,8 @@ type Type interface {
 	// both representations are different: a string representation of the final
 	// type, this is just the alias, while string contains also the underlying type.
 	TypeString() string
+	// Name returns the unqualified name
+	UnqualifiedName() string
 }
 
 // BaseType contains the common fields for all the types.
@@ -84,6 +86,9 @@ func (t *BaseType) TypeString() string { panic("not implemented") }
 // String returns a string representation for the type
 func (t *BaseType) String() string { panic("not implemented") }
 
+// String returns a string representation for the type
+func (t *BaseType) UnqualifiedName() string { panic("not implemented") }
+
 // Basic is a basic type, which only is identified by its name.
 type Basic struct {
 	*BaseType
@@ -109,6 +114,10 @@ func (b Basic) TypeString() string {
 	return b.String()
 }
 
+func (b Basic) UnqualifiedName() string {
+	return b.Name
+}
+
 // Named is non-basic type identified by a name on some package.
 type Named struct {
 	*BaseType
@@ -125,6 +134,10 @@ func (n Named) String() string {
 
 func (n Named) TypeString() string {
 	return n.String()
+}
+
+func (n Named) UnqualifiedName() string {
+	return n.Name
 }
 
 // NewNamed creates a new named type given its package path and name.
@@ -161,6 +174,10 @@ func (a Alias) TypeString() string {
 	return a.Type.TypeString()
 }
 
+func (a Alias) UnqualifiedName() string {
+	return a.Type.UnqualifiedName()
+}
+
 // Map is a map type with a key and a value type.
 type Map struct {
 	*BaseType
@@ -182,6 +199,10 @@ func (m Map) String() string {
 }
 
 func (m Map) TypeString() string {
+	return m.String()
+}
+
+func (m Map) UnqualifiedName() string {
 	return m.String()
 }
 

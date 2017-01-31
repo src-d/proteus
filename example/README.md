@@ -16,3 +16,5 @@ The generated file will be in:
 ```
 $GOPATH/src/github.com/src-d/proteus/example/protos/github.com/proteus/example/generated.proto
 ```
+
+You can also use `make regenerate`

@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"net"
@@ -6,16 +6,17 @@ import (
 	"github.com/src-d/proteus/example"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/grpclog"
 )
 
-func main() {
-	lis, err := net.Listen("tcp", "localhost:8001")
+// NewServer returns a new server serving in the given address
+func NewServer(addr string) (*grpc.Server, error) {
+	lis, err := net.Listen("tcp", addr)
 	if err != nil {
-		grpclog.Fatalf("could not open port 8001")
+		return nil, err
 	}
 
 	grpcServer := grpc.NewServer()
 	example.RegisterExampleServiceServer(grpcServer, example.NewExampleServiceServer())
-	grpcServer.Serve(lis)
+	go grpcServer.Serve(lis)
+	return grpcServer, nil
 }
