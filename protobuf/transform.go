@@ -69,7 +69,7 @@ func (t *Transformer) Transform(p *scanner.Package) *Package {
 		Name:    toProtobufPkg(p.Path),
 		Path:    p.Path,
 		Imports: []string{"github.com/gogo/protobuf/gogoproto/gogo.proto"},
-		Options: defaultOptionsForPackage(p),
+		Options: t.defaultOptionsForPackage(p),
 	}
 
 	for _, s := range p.Structs {
@@ -176,7 +176,7 @@ func capitalize(s string) string {
 func (t *Transformer) transformEnum(e *scanner.Enum) *Enum {
 	enum := &Enum{
 		Name:    e.Name,
-		Options: defaultOptionsForScannedEnum(e),
+		Options: t.defaultOptionsForScannedEnum(e),
 	}
 
 	for i, v := range e.Values {
@@ -187,7 +187,7 @@ func (t *Transformer) transformEnum(e *scanner.Enum) *Enum {
 	return enum
 }
 
-func defaultOptionsForScannedEnum(e *scanner.Enum) Options {
+func (t *Transformer) defaultOptionsForScannedEnum(e *scanner.Enum) Options {
 	return Options{
 		"(gogoproto.enumdecl)":            NewLiteralValue("false"),
 		"(gogoproto.goproto_enum_prefix)": NewLiteralValue("false"),
@@ -197,7 +197,7 @@ func defaultOptionsForScannedEnum(e *scanner.Enum) Options {
 func (t *Transformer) transformStruct(pkg *Package, s *scanner.Struct) *Message {
 	msg := &Message{
 		Name:    s.Name,
-		Options: defaultOptionsForScannedMessage(s),
+		Options: t.defaultOptionsForScannedMessage(s),
 	}
 
 	for i, f := range s.Fields {
@@ -213,7 +213,7 @@ func (t *Transformer) transformStruct(pkg *Package, s *scanner.Struct) *Message 
 	return msg
 }
 
-func defaultOptionsForScannedMessage(s *scanner.Struct) Options {
+func (t *Transformer) defaultOptionsForScannedMessage(s *scanner.Struct) Options {
 	return Options{
 		"(gogoproto.typedecl)": NewLiteralValue("false"),
 	}
@@ -227,7 +227,7 @@ func (t *Transformer) transformField(pkg *Package, msg *Message, field *scanner.
 
 	f := &Field{
 		Name:     toLowerSnakeCase(field.Name),
-		Options:  defaultOptionsForStructField(t, field),
+		Options:  t.defaultOptionsForStructField(field),
 		Pos:      pos,
 		Repeated: repeated,
 	}
@@ -250,27 +250,27 @@ func (t *Transformer) transformField(pkg *Package, msg *Message, field *scanner.
 	return f
 }
 
-func defaultOptionsForStructField(t *Transformer, field *scanner.Field) Options {
+func (t *Transformer) defaultOptionsForStructField(field *scanner.Field) Options {
 	opts := make(Options)
 	if generator.CamelCase(toLowerSnakeCase(field.Name)) != field.Name {
 		opts["(gogoproto.customname)"] = NewStringValue(field.Name)
 	}
 
-	if needsNotNullableOption(t, field.Type) {
+	if t.needsNotNullableOption(field.Type) {
 		opts["(gogoproto.nullable)"] = NewLiteralValue("false")
 	}
 
 	return opts
 }
 
-func needsNotNullableOption(t *Transformer, typ scanner.Type) bool {
+func (t *Transformer) needsNotNullableOption(typ scanner.Type) bool {
 	isNullable := typ.IsNullable()
 
 	switch ty := typ.(type) {
 	case *scanner.Named:
 		return !isNullable && !t.IsEnum(ty.Path, ty.Name)
 	case *scanner.Alias:
-		return needsNotNullableOption(t, ty.Underlying)
+		return t.needsNotNullableOption(ty.Underlying)
 	}
 
 	return false
@@ -421,7 +421,7 @@ func toUpperSnakeCase(s string) string {
 	return strings.ToUpper(toLowerSnakeCase(s))
 }
 
-func defaultOptionsForPackage(p *scanner.Package) Options {
+func (t *Transformer) defaultOptionsForPackage(p *scanner.Package) Options {
 	return Options{
 		"go_package": NewStringValue(p.Name),
 	}
