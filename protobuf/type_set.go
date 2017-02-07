@@ -1,7 +1,9 @@
 package protobuf
 
+// TypeSet represents a set of packages and their types.
 type TypeSet map[string]map[string]struct{}
 
+// NewTypeSet returns a new, empty TypeSet.
 func NewTypeSet() TypeSet {
 	return TypeSet{}
 }
@@ -30,7 +32,7 @@ func (ts TypeSet) Contains(pkg, name string) bool {
 	return false
 }
 
-// Len returns the total number of elements in the set
+// Len returns the total number of elements in the set.
 func (ts TypeSet) Len() (c int) {
 	for _, v := range ts {
 		c += len(v)

@@ -43,22 +43,22 @@ func (t *Transformer) SetMappings(m TypeMappings) {
 	t.mappings = m
 }
 
-// SetStructSet sets the passed TypeSet as a known list of structs
+// SetStructSet sets the passed TypeSet as a known list of structs.
 func (t *Transformer) SetStructSet(ts TypeSet) {
 	t.structSet = ts
 }
 
-// IsStruct checks if the given pkg path and name is a known struct
+// IsStruct checks if the given pkg path and name is a known struct.
 func (t *Transformer) IsStruct(pkg, name string) bool {
 	return t.structSet.Contains(pkg, name)
 }
 
-// IsEnum checks if the given pkg path and name is a known enum
+// IsEnum checks if the given pkg path and name is a known enum.
 func (t *Transformer) IsEnum(pkg, name string) bool {
 	return t.enumSet.Contains(pkg, name)
 }
 
-// SetEnumSet sets the passed TypeSet as a known list of enums
+// SetEnumSet sets the passed TypeSet as a known list of enums.
 func (t *Transformer) SetEnumSet(ts TypeSet) {
 	t.enumSet = ts
 }
