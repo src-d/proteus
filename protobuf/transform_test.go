@@ -97,6 +97,30 @@ func (s *TransformerSuite) TearDownTest() {
 	report.EndTestMode()
 }
 
+func (s *TransformerSuite) TestIsEnum() {
+	ts := NewTypeSet()
+	ts.Add("paquete", "Tipo")
+	ts.Add("package", "Type")
+	s.t.SetEnumSet(ts)
+
+	s.True(s.t.IsEnum("paquete", "Tipo"), "paquete.Tipo is an enum")
+	s.True(s.t.IsEnum("package", "Type"), "package.Type is an enum")
+	s.False(s.t.IsEnum("package", "Tipo"), "package.Tipo is not an enum")
+	s.False(s.t.IsEnum("paquete", "Type"), "paquete.Type is not an enum")
+}
+
+func (s *TransformerSuite) TestIsStruct() {
+	ts := NewTypeSet()
+	ts.Add("paquete", "Tipo")
+	ts.Add("package", "Type")
+	s.t.SetStructSet(ts)
+
+	s.True(s.t.IsStruct("paquete", "Tipo"), "paquete.Tipo is an enum")
+	s.True(s.t.IsStruct("package", "Type"), "package.Type is an enum")
+	s.False(s.t.IsStruct("package", "Tipo"), "package.Tipo is not an enum")
+	s.False(s.t.IsStruct("paquete", "Type"), "paquete.Type is not an enum")
+}
+
 func (s *TransformerSuite) TestFindMapping() {
 	cases := []struct {
 		name         string
@@ -296,11 +320,52 @@ func (s *TransformerSuite) TestTransformField() {
 			},
 		},
 		{
+			"NonNullableType",
+			scanner.NewNamed("my/pckg", "hello"),
+			&Field{
+				Name: "non_nullable_type",
+				Type: NewNamed("my.pckg", "hello"),
+				Options: Options{
+					"(gogoproto.nullable)": NewLiteralValue("false"),
+				},
+			},
+		},
+		{
 			"Invalid",
 			scanner.NewBasic("complex64"),
 			nil,
 		},
+		{
+			"MyEnum",
+			scanner.NewNamed("my/pckg", "MyEnum"),
+			&Field{
+				Name:    "my_enum",
+				Type:    NewNamed("my.pckg", "MyEnum"),
+				Options: Options{},
+			},
+		},
+		{
+			"MyAlias",
+			scanner.NewAlias(
+				scanner.NewNamed("my/pckg", "MyAlias"),
+				scanner.NewBasic("string"),
+			),
+			&Field{
+				Name: "my_alias",
+				Type: NewAlias(
+					NewNamed("my.pckg", "MyAlias"),
+					NewBasic("string"),
+				),
+				Options: Options{
+					"(gogoproto.casttype)": NewStringValue("my/pckg.MyAlias"),
+				},
+			},
+		},
 	}
+
+	ts := NewTypeSet()
+	ts.Add("my/pckg", "MyEnum")
+	s.t.SetEnumSet(ts)
 
 	for _, c := range cases {
 		f := s.t.transformField(&Package{}, &Message{}, &scanner.Field{

@@ -22,7 +22,9 @@ import (
 // corresponding type mapping, and then the default mappings to give the user
 // ability to override any kind of type.
 type Transformer struct {
-	mappings TypeMappings
+	mappings  TypeMappings
+	structSet TypeSet
+	enumSet   TypeSet
 }
 
 // NewTransformer creates a new transformer instance.
@@ -41,13 +43,33 @@ func (t *Transformer) SetMappings(m TypeMappings) {
 	t.mappings = m
 }
 
+// SetStructSet sets the passed TypeSet as a known list of structs.
+func (t *Transformer) SetStructSet(ts TypeSet) {
+	t.structSet = ts
+}
+
+// IsStruct checks if the given pkg path and name is a known struct.
+func (t *Transformer) IsStruct(pkg, name string) bool {
+	return t.structSet.Contains(pkg, name)
+}
+
+// IsEnum checks if the given pkg path and name is a known enum.
+func (t *Transformer) IsEnum(pkg, name string) bool {
+	return t.enumSet.Contains(pkg, name)
+}
+
+// SetEnumSet sets the passed TypeSet as a known list of enums.
+func (t *Transformer) SetEnumSet(ts TypeSet) {
+	t.enumSet = ts
+}
+
 // Transform converts a scanned package to a protobuf package.
 func (t *Transformer) Transform(p *scanner.Package) *Package {
 	pkg := &Package{
 		Name:    toProtobufPkg(p.Path),
 		Path:    p.Path,
 		Imports: []string{"github.com/gogo/protobuf/gogoproto/gogo.proto"},
-		Options: defaultOptionsForPackage(p),
+		Options: t.defaultOptionsForPackage(p),
 	}
 
 	for _, s := range p.Structs {
@@ -154,25 +176,28 @@ func capitalize(s string) string {
 func (t *Transformer) transformEnum(e *scanner.Enum) *Enum {
 	enum := &Enum{
 		Name:    e.Name,
-		Options: defaultOptionsForScannedEnum(e),
+		Options: t.defaultOptionsForScannedEnum(e),
 	}
 
 	for i, v := range e.Values {
-		enum.Values.Add(toUpperSnakeCase(v), uint(i), nil)
+		enum.Values.Add(toUpperSnakeCase(v), uint(i), Options{
+			"(gogoproto.enumvalue_customname)": NewStringValue(v),
+		})
 	}
 	return enum
 }
 
-func defaultOptionsForScannedEnum(e *scanner.Enum) Options {
+func (t *Transformer) defaultOptionsForScannedEnum(e *scanner.Enum) Options {
 	return Options{
-		"(gogoproto.enumdecl)": NewLiteralValue("false"),
+		"(gogoproto.enumdecl)":            NewLiteralValue("false"),
+		"(gogoproto.goproto_enum_prefix)": NewLiteralValue("false"),
 	}
 }
 
 func (t *Transformer) transformStruct(pkg *Package, s *scanner.Struct) *Message {
 	msg := &Message{
 		Name:    s.Name,
-		Options: defaultOptionsForScannedMessage(s),
+		Options: t.defaultOptionsForScannedMessage(s),
 	}
 
 	for i, f := range s.Fields {
@@ -188,7 +213,7 @@ func (t *Transformer) transformStruct(pkg *Package, s *scanner.Struct) *Message 
 	return msg
 }
 
-func defaultOptionsForScannedMessage(s *scanner.Struct) Options {
+func (t *Transformer) defaultOptionsForScannedMessage(s *scanner.Struct) Options {
 	return Options{
 		"(gogoproto.typedecl)": NewLiteralValue("false"),
 	}
@@ -202,7 +227,7 @@ func (t *Transformer) transformField(pkg *Package, msg *Message, field *scanner.
 
 	f := &Field{
 		Name:     toLowerSnakeCase(field.Name),
-		Options:  defaultOptionsForStructField(field),
+		Options:  t.defaultOptionsForStructField(field),
 		Pos:      pos,
 		Repeated: repeated,
 	}
@@ -225,17 +250,30 @@ func (t *Transformer) transformField(pkg *Package, msg *Message, field *scanner.
 	return f
 }
 
-func defaultOptionsForStructField(field *scanner.Field) Options {
+func (t *Transformer) defaultOptionsForStructField(field *scanner.Field) Options {
 	opts := make(Options)
 	if generator.CamelCase(toLowerSnakeCase(field.Name)) != field.Name {
 		opts["(gogoproto.customname)"] = NewStringValue(field.Name)
 	}
 
-	if !field.Type.IsNullable() {
+	if t.needsNotNullableOption(field.Type) {
 		opts["(gogoproto.nullable)"] = NewLiteralValue("false")
 	}
 
 	return opts
+}
+
+func (t *Transformer) needsNotNullableOption(typ scanner.Type) bool {
+	isNullable := typ.IsNullable()
+
+	switch ty := typ.(type) {
+	case *scanner.Named:
+		return !isNullable && !t.IsEnum(ty.Path, ty.Name)
+	case *scanner.Alias:
+		return t.needsNotNullableOption(ty.Underlying)
+	}
+
+	return false
 }
 
 func (t *Transformer) transformType(pkg *Package, typ scanner.Type, msg *Message, field *Field) Type {
@@ -383,7 +421,7 @@ func toUpperSnakeCase(s string) string {
 	return strings.ToUpper(toLowerSnakeCase(s))
 }
 
-func defaultOptionsForPackage(p *scanner.Package) Options {
+func (t *Transformer) defaultOptionsForPackage(p *scanner.Package) Options {
 	return Options{
 		"go_package": NewStringValue(p.Name),
 	}

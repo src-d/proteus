@@ -278,12 +278,10 @@ In the future, this will be extensible via plugins.
 You can find an example of a *real* use case on the [example](xample) folder.
 For checking how the server and client works, see
 [server.go](example/server/server.go) and
-[client.go](example/client/client.go). For running the example:
+[client.go](example/client/client.go). The orchestration of server and client
+is done in [example_test.go](example_test.go). The example creates a server and
+a new client and tests the output.
 
-- In the example folder, do a `make regenerate`.
-- `go run server/server.go &`
-- `go run client/client.go`
-- Kill your server.
 
 ### Features to come
 
