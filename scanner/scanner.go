@@ -11,7 +11,8 @@ import (
 	"sync"
 
 	"github.com/src-d/proteus/report"
-	"github.com/src-d/proteus/source"
+
+	"gopkg.in/src-d/go-parse-utils.v1"
 )
 
 var goPath = os.Getenv("GOPATH")
@@ -20,7 +21,7 @@ var goPath = os.Getenv("GOPATH")
 // and extract types and structs from.
 type Scanner struct {
 	packages []string
-	importer *source.Importer
+	importer *parseutil.Importer
 }
 
 // ErrNoGoPathSet is the error returned when the GOPATH variable is not
@@ -47,7 +48,7 @@ func New(packages ...string) (*Scanner, error) {
 
 	return &Scanner{
 		packages: packages,
-		importer: source.NewImporter(),
+		importer: parseutil.NewImporter(),
 	}, nil
 }
 
@@ -89,11 +90,11 @@ func (s *Scanner) Scan() ([]*Package, error) {
 func (s *Scanner) scanPackage(p string) (*Package, error) {
 	pkg, err := s.importer.ImportWithFilters(
 		p,
-		source.FileFilters{
-			func(pkg, file string, typ source.FileType) bool {
+		parseutil.FileFilters{
+			func(pkg, file string, typ parseutil.FileType) bool {
 				return !strings.HasSuffix(file, ".pb.go")
 			},
-			func(pkg, file string, typ source.FileType) bool {
+			func(pkg, file string, typ parseutil.FileType) bool {
 				return !strings.HasSuffix(file, ".proteus.go")
 			},
 		},

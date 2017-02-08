@@ -20,6 +20,11 @@ func projectPath(pkg string) string {
 	return filepath.Join(gopath, "src", project, pkg)
 }
 
+func Test_unexistingPackage(t *testing.T) {
+	_, err := New("github.com/src-d/nonexistingprojectforsure")
+	require.NotNil(t, err)
+}
+
 func TestScanType(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -436,6 +441,26 @@ func TestScanner(t *testing.T) {
 	assertFunc(t, findFuncByName("GeneratedMethod", subpkg.Funcs), "GeneratedMethod", "Point", []string{"int32"}, []string{"Point"}, false)
 	assertFunc(t, findFuncByName("GeneratedMethodOnPointer", subpkg.Funcs), "GeneratedMethodOnPointer", "Point", []string{"bool"}, []string{"Point"}, false)
 	assertFunc(t, findFuncByName("Name", subpkg.Funcs), "Name", "MyContainer", []string{}, []string{"string"}, false)
+}
+
+func TestenumValues_Swap(t *testing.T) {
+	values := enumValues{
+		enumValue{"First", 1},
+		enumValue{"Second", 2},
+		enumValue{"Third", 3},
+	}
+
+	require.Equal(t, "Second", values[1].name)
+	require.Equal(t, 2, values[1].pos)
+	require.Equal(t, "Third", values[2].name)
+	require.Equal(t, 3, values[2].pos)
+
+	values.Swap(1, 2)
+
+	require.Equal(t, "Third", values[1].name)
+	require.Equal(t, 3, values[1].pos)
+	require.Equal(t, "Second", values[2].name)
+	require.Equal(t, 2, values[2].pos)
 }
 
 func findFuncByName(name string, fns []*Func) *Func {

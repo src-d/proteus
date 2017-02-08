@@ -6,7 +6,7 @@ import (
 	"go/token"
 	"strings"
 
-	"github.com/src-d/proteus/source"
+	"gopkg.in/src-d/go-parse-utils.v1"
 )
 
 // context holds all the scanning context of a single package. Contains all
@@ -31,7 +31,7 @@ type context struct {
 }
 
 func newContext(path string) (*context, error) {
-	pkg, err := source.PackageAST(path)
+	pkg, err := parseutil.PackageAST(path)
 	if err != nil {
 		return nil, err
 	}
