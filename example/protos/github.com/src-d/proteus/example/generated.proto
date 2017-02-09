@@ -24,6 +24,12 @@ message CategoryOptions {
 	bool can_buy = 2;
 }
 
+message MyTime {
+	option (gogoproto.typedecl) = false;
+	google.protobuf.Timestamp time = 1 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+	string name = 2;
+}
+
 message Product {
 	option (gogoproto.typedecl) = false;
 	int64 id = 1 [(gogoproto.customname) = "ID"];
@@ -33,6 +39,12 @@ message Product {
 	string name = 5;
 	double price = 6;
 	int64 category_id = 7 [(gogoproto.customname) = "CategoryID"];
+}
+
+message GetAlphaTimeRequest {
+}
+
+message GetOmegaTimeRequest {
 }
 
 message RandomCategoryRequest {
@@ -56,6 +68,8 @@ enum Type {
 }
 
 service ExampleService {
+	rpc GetAlphaTime (github.com.srcd.proteus.example.GetAlphaTimeRequest) returns (github.com.srcd.proteus.example.MyTime);
+	rpc GetOmegaTime (github.com.srcd.proteus.example.GetOmegaTimeRequest) returns (github.com.srcd.proteus.example.MyTime);
 	rpc RandomCategory (github.com.srcd.proteus.example.RandomCategoryRequest) returns (github.com.srcd.proteus.example.CategoryOptions);
 	rpc RandomNumber (github.com.srcd.proteus.example.RandomNumberRequest) returns (github.com.srcd.proteus.example.RandomNumberResponse);
 }

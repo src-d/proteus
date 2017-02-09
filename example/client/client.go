@@ -2,6 +2,7 @@ package client
 
 import (
 	"github.com/src-d/proteus/example"
+
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -24,6 +25,14 @@ func (c *Client) RequestRandomNumber(mean, std float64) (float64, error) {
 		return 0, err
 	}
 	return res.Result1, nil
+}
+
+func (c *Client) RequestAlphaTime() (*example.MyTime, error) {
+	return c.GetAlphaTime(context.Background(), &example.GetAlphaTimeRequest{})
+}
+
+func (c *Client) RequestOmegaTime() (*example.MyTime, error) {
+	return c.GetOmegaTime(context.Background(), &example.GetOmegaTimeRequest{})
 }
 
 func (c *Client) RequestRandomCategory() (*example.CategoryOptions, error) {

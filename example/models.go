@@ -74,6 +74,11 @@ type User struct {
 	Email    string
 }
 
+type MyTime struct {
+	Time time.Time
+	Name string
+}
+
 //proteus:generate
 func RandomNumber(mean, std float64) float64 {
 	// Related documentation: https://xkcd.com/221/
@@ -86,6 +91,21 @@ func RandomCategory() CategoryOptions {
 		ShowPrices: RandomBool(),
 		CanBuy:     RandomBool(),
 	}
+}
+
+//proteus:generate
+func GetAlphaTime() MyTime {
+	return MyTime{Time: time.Unix(0, 0), Name: "alpha"}
+}
+
+//proteus:generate
+func GetOmegaTime() (*MyTime, error) {
+	t, err := time.Parse("Jan 2, 2006 at 3:04pm", "Dec 12, 2012 at 10:30am")
+	if err != nil {
+		return nil, err
+	}
+
+	return &MyTime{Time: t, Name: "omega"}, nil
 }
 
 func RandomBool() bool {
