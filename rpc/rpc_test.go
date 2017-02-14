@@ -53,6 +53,13 @@ const expectedFuncNotGenerated = `func (s *FooServer) DoFoo(ctx context.Context,
 	return
 }`
 
+const expectedFuncNotGeneratedAndNotNullable = `func (s *FooServer) DoFoo(ctx context.Context, in *Foo) (result *Bar, err error) {
+	result = new(Bar)
+	aux := DoFoo(in)
+	result = &aux
+	return
+}`
+
 const expectedFuncGenerated = `func (s *FooServer) DoFoo(ctx context.Context, in *FooRequest) (result *FooResponse, err error) {
 	result = new(FooResponse)
 	result.Result1, result.Result2, result.Result3 = DoFoo(in.Arg1, in.Arg2, in.Arg3)
@@ -108,6 +115,16 @@ func (s *RPCSuite) TestDeclMethod() {
 				Output: protobuf.NewNamed("", "Bar"),
 			},
 			expectedFuncNotGenerated,
+		},
+		{
+			"func output not generated and not nullable",
+			&protobuf.RPC{
+				Name:   "DoFoo",
+				Method: "DoFoo",
+				Input:  protobuf.NewNamed("", "Foo"),
+				Output: notNullable(protobuf.NewNamed("", "Bar")),
+			},
+			expectedFuncNotGeneratedAndNotNullable,
 		},
 		{
 			"func generated",
@@ -364,6 +381,13 @@ func (s *RPCSuite) fakePkg() *types.Package {
 	pkg, err := config.Check("", fs, []*ast.File{f}, nil)
 	s.Nil(err)
 	return pkg
+}
+
+func notNullable(t protobuf.Type) protobuf.Type {
+	src := scanner.NewNamed("", "X")
+	src.SetNullable(false)
+	t.SetSource(src)
+	return t
 }
 
 func render(decl ast.Decl) (string, error) {

@@ -80,8 +80,16 @@ func firstTypeName(tuple *types.Tuple) types.Object {
 	return t.(*types.Named).Obj()
 }
 
+func (c *context) pkgPath() string {
+	if c.pkg != nil {
+		return c.pkg.Path()
+	}
+
+	return ""
+}
+
 func (c *context) addImport(path string) {
-	if path == c.pkg.Path() {
+	if path == c.pkgPath() {
 		return
 	}
 

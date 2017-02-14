@@ -11,7 +11,8 @@ import (
 
 	"github.com/src-d/proteus/protobuf"
 	"github.com/src-d/proteus/report"
-	"github.com/src-d/proteus/source"
+
+	"gopkg.in/src-d/go-parse-utils.v1"
 )
 
 // Generator generates implementations of an RPC server for a package.
@@ -45,12 +46,12 @@ import (
 // The file will be written to the package path and it will be named
 // "server.proteus.go"
 type Generator struct {
-	importer *source.Importer
+	importer *parseutil.Importer
 }
 
 // NewGenerator creates a new Generator.
 func NewGenerator() *Generator {
-	return &Generator{source.NewImporter()}
+	return &Generator{parseutil.NewImporter()}
 }
 
 // Generate creates a new file in the package at the given path and implements
