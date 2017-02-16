@@ -21,6 +21,11 @@ func (s *exampleServiceServer) GetOmegaTime(ctx context.Context, in *GetOmegaTim
 	result, err = GetOmegaTime()
 	return
 }
+func (s *exampleServiceServer) GetPhone(ctx context.Context, in *GetPhoneRequest) (result *Product, err error) {
+	result = new(Product)
+	result = GetPhone()
+	return
+}
 func (s *exampleServiceServer) RandomCategory(ctx context.Context, in *RandomCategoryRequest) (result *CategoryOptions, err error) {
 	result = new(CategoryOptions)
 	aux := RandomCategory()

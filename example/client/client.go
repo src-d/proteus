@@ -39,6 +39,10 @@ func (c *Client) RequestRandomCategory() (*example.CategoryOptions, error) {
 	return c.RandomCategory(context.Background(), &example.RandomCategoryRequest{})
 }
 
+func (c *Client) RequestPhone() (*example.Product, error) {
+	return c.GetPhone(context.Background(), &example.GetPhoneRequest{})
+}
+
 func NewClient(addr string) (*Client, error) {
 	conn, err := grpc.Dial("localhost:8001", grpc.WithInsecure())
 	if err != nil {

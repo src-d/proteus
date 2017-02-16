@@ -48,6 +48,9 @@ message GetAlphaTimeRequest {
 message GetOmegaTimeRequest {
 }
 
+message GetPhoneRequest {
+}
+
 message RandomCategoryRequest {
 }
 
@@ -71,6 +74,7 @@ enum Type {
 service ExampleService {
 	rpc GetAlphaTime (github.com.srcd.proteus.example.GetAlphaTimeRequest) returns (github.com.srcd.proteus.example.MyTime);
 	rpc GetOmegaTime (github.com.srcd.proteus.example.GetOmegaTimeRequest) returns (github.com.srcd.proteus.example.MyTime);
+	rpc GetPhone (github.com.srcd.proteus.example.GetPhoneRequest) returns (github.com.srcd.proteus.example.Product);
 	rpc RandomCategory (github.com.srcd.proteus.example.RandomCategoryRequest) returns (github.com.srcd.proteus.example.CategoryOptions);
 	rpc RandomNumber (github.com.srcd.proteus.example.RandomNumberRequest) returns (github.com.srcd.proteus.example.RandomNumberResponse);
 }

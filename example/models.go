@@ -11,7 +11,6 @@ type Product struct {
 	Name  string
 	Price float64
 
-	// This is not yet supported
 	Tags       Tags
 	CategoryID int64
 	// Category will not be generated because we explicitly said so.
@@ -106,6 +105,17 @@ func GetOmegaTime() (*MyTime, error) {
 	}
 
 	return &MyTime{Time: t, Name: "omega"}, nil
+}
+
+//proteus:generate
+func GetPhone() *Product {
+	return &Product{
+		Name:       "MiPhone",
+		Price:      733.33,
+		Tags:       Tags{"cool", "mi", "phone"},
+		CategoryID: 1,
+		Category:   Category{},
+	}
 }
 
 func RandomBool() bool {
