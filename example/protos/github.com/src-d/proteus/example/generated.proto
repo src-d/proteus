@@ -38,7 +38,8 @@ message Product {
 	google.protobuf.Timestamp deleted_at = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 	string name = 5;
 	double price = 6;
-	int64 category_id = 7 [(gogoproto.customname) = "CategoryID"];
+	repeated string tags = 7;
+	int64 category_id = 8 [(gogoproto.customname) = "CategoryID"];
 }
 
 message GetAlphaTimeRequest {

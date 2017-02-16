@@ -12,7 +12,7 @@ type Product struct {
 	Price float64
 
 	// This is not yet supported
-	//	Tags       Tags
+	Tags       Tags
 	CategoryID int64
 	// Category will not be generated because we explicitly said so.
 	Category Category `proteus:"-"`

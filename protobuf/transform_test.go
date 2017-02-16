@@ -361,6 +361,21 @@ func (s *TransformerSuite) TestTransformField() {
 				},
 			},
 		},
+		{
+			"MyRepeatedAlias",
+			scanner.NewAlias(
+				scanner.NewNamed("my/pckg", "MyRepeatedAlias"),
+				repeated(scanner.NewBasic("string")),
+			),
+			&Field{
+				Name: "my_repeated_alias",
+				Type: NewAlias(
+					NewNamed("my.pckg", "MyRepeatedAlias"),
+					NewBasic("string"),
+				),
+				Options: Options{},
+			},
+		},
 	}
 
 	ts := NewTypeSet()
