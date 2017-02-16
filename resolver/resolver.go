@@ -124,15 +124,15 @@ func (r *Resolver) resolveType(typ scanner.Type, info *packagesInfo) (result sca
 		}
 
 		if !info.hasPackage(t.Path) {
-			report.Warn("type %q of package %s will be ignored because it was not present on the scan path", t.Name, t.Path)
+			report.Warn("type %q of package %s will be ignored because it was not present on the scan path.", t.Name, t.Path)
 			return nil
 		}
 
 		alias := info.aliasOf(t)
 		if alias != nil {
-			if alias.IsRepeated() {
+			if alias.IsRepeated() && t.IsRepeated() {
 				report.Warn(
-					"type %q of package %s is an alias for %s that is marked as repeated. Alias for repeated fields are not currently supported, this field will be ignored.",
+					"type %q of package %s is an alias for %s that is marked as repeated while the type is being used repeated too. Alias for repeated fields that are repeated are not currently supported, this field will be ignored.",
 					t.Name,
 					t.Path,
 					alias.String(),

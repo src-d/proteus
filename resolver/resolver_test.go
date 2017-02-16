@@ -3,6 +3,7 @@ package resolver
 import (
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/src-d/proteus/report"
@@ -103,7 +104,7 @@ func (s *ResolverSuite) TestIsCustomType() {
 	}
 }
 
-func (s *ResolverSuite) TestAliasToRepeatedFieldWarning() {
+func (s *ResolverSuite) TestNotInScanPathWarning() {
 	report.TestMode()
 
 	aliasOf := scanner.NewNamed("", "alias")
@@ -112,8 +113,45 @@ func (s *ResolverSuite) TestAliasToRepeatedFieldWarning() {
 		aliases: map[string]scanner.Type{"named": aliasOf},
 	}
 	typ := scanner.NewNamed("", "named")
+	typ.SetRepeated(true)
 	s.Nil(s.r.resolveType(typ, info))
 	s.Len(report.MessageStack(), 1, "it contains one message")
+	s.True(strings.HasSuffix(report.MessageStack()[0], "scan path."), "nil because of repeated repeated")
+
+	report.EndTestMode()
+}
+
+func (s *ResolverSuite) TestAliasToRepeatedFieldWarning() {
+	report.TestMode()
+
+	aliasOf := scanner.NewNamed("", "alias")
+	aliasOf.SetRepeated(true)
+	info := &packagesInfo{
+		aliases:  map[string]scanner.Type{"named": aliasOf},
+		packages: map[string]struct{}{"": struct{}{}},
+	}
+	typ := scanner.NewNamed("", "named")
+	typ.SetRepeated(true)
+	s.Nil(s.r.resolveType(typ, info))
+	s.Len(report.MessageStack(), 1, "it contains one message")
+	s.True(strings.HasSuffix(report.MessageStack()[0], "this field will be ignored."), "nil because of repeated repeated")
+
+	report.EndTestMode()
+}
+
+func (s *ResolverSuite) TestAliasToRepeatedFieldWithoutWarning() {
+	report.TestMode()
+
+	aliasOf := scanner.NewNamed("", "alias")
+	aliasOf.SetRepeated(true)
+	info := &packagesInfo{
+		aliases:  map[string]scanner.Type{"named": aliasOf},
+		packages: map[string]struct{}{"": struct{}{}},
+	}
+	typ := scanner.NewNamed("", "named")
+	typ.SetRepeated(false)
+	s.NotNil(s.r.resolveType(typ, info))
+	s.Len(report.MessageStack(), 0, "it contains no message")
 
 	report.EndTestMode()
 }

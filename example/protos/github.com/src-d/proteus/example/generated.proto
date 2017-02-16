@@ -38,13 +38,17 @@ message Product {
 	google.protobuf.Timestamp deleted_at = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 	string name = 5;
 	double price = 6;
-	int64 category_id = 7 [(gogoproto.customname) = "CategoryID"];
+	repeated string tags = 7;
+	int64 category_id = 8 [(gogoproto.customname) = "CategoryID"];
 }
 
 message GetAlphaTimeRequest {
 }
 
 message GetOmegaTimeRequest {
+}
+
+message GetPhoneRequest {
 }
 
 message RandomCategoryRequest {
@@ -70,6 +74,7 @@ enum Type {
 service ExampleService {
 	rpc GetAlphaTime (github.com.srcd.proteus.example.GetAlphaTimeRequest) returns (github.com.srcd.proteus.example.MyTime);
 	rpc GetOmegaTime (github.com.srcd.proteus.example.GetOmegaTimeRequest) returns (github.com.srcd.proteus.example.MyTime);
+	rpc GetPhone (github.com.srcd.proteus.example.GetPhoneRequest) returns (github.com.srcd.proteus.example.Product);
 	rpc RandomCategory (github.com.srcd.proteus.example.RandomCategoryRequest) returns (github.com.srcd.proteus.example.CategoryOptions);
 	rpc RandomNumber (github.com.srcd.proteus.example.RandomNumberRequest) returns (github.com.srcd.proteus.example.RandomNumberResponse);
 }

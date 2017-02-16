@@ -324,7 +324,11 @@ func (t *Transformer) transformType(pkg *Package, typ scanner.Type, msg *Message
 		if field.Options == nil {
 			field.Options = make(Options)
 		}
-		field.Options["(gogoproto.casttype)"] = NewStringValue(castType(pkg, n.Type))
+
+		// Repeated types cannot use casttype :(
+		if !ty.IsRepeated() {
+			field.Options["(gogoproto.casttype)"] = NewStringValue(castType(pkg, n.Type))
+		}
 		return n
 	}
 

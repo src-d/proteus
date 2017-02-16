@@ -2,6 +2,7 @@ package proteus
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/src-d/proteus/example/client"
 	"github.com/src-d/proteus/example/server"
@@ -44,9 +45,19 @@ func ExampleProteus() {
 		panic(fmt.Sprintf("could not receive omega time: %s", err))
 	}
 	fmt.Printf("%s: %s\n", ω.Name, ω.Time.Format("Jan 2, 2006 at 3:04pm"))
+
+	product, err := c.RequestPhone()
+	if err != nil {
+		panic(fmt.Sprintf("could not receive product: %s", err))
+	}
+	fmt.Println(product.Name)
+	fmt.Println(strings.Join(product.Tags, ", "))
+
 	// Output: 4
 	// true
 	// true
 	// alpha: Jan 1, 1970 at 12:00am
 	// omega: Dec 12, 2012 at 10:30am
+	// MiPhone
+	// cool, mi, phone
 }
