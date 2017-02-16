@@ -7,9 +7,10 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/src-d/proteus"
-	"github.com/src-d/proteus/protobuf"
-	"github.com/src-d/proteus/report"
+	"gopkg.in/src-d/proteus.v1"
+	"gopkg.in/src-d/proteus.v1/protobuf"
+	"gopkg.in/src-d/proteus.v1/report"
+
 	"gopkg.in/urfave/cli.v1"
 )
 

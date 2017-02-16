@@ -14,7 +14,7 @@ import (
 
 var gopath = os.Getenv("GOPATH")
 
-const project = "github.com/src-d/proteus"
+const project = "gopkg.in/src-d/proteus.v1"
 
 func projectPath(pkg string) string {
 	return filepath.Join(gopath, "src", project, pkg)

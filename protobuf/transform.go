@@ -12,8 +12,8 @@ import (
 
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 
-	"github.com/src-d/proteus/report"
-	"github.com/src-d/proteus/scanner"
+	"gopkg.in/src-d/proteus.v1/report"
+	"gopkg.in/src-d/proteus.v1/scanner"
 )
 
 // Transformer is in charge of converting scanned Go entities to protobuf

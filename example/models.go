@@ -2,7 +2,7 @@ package example
 
 import "time"
 
-//go:generate proteus -p github.com/src-d/proteus/example -f $GOPATH/src/github.com/src-d/proteus/example/protos
+//go:generate proteus -p gopkg.in/src-d/proteus.v1/example -f $GOPATH/src/gopkg.in/src-d/proteus.v1/example/protos
 
 //proteus:generate
 type Product struct {

@@ -9,12 +9,12 @@ import (
 )
 
 var goSrc = filepath.Join(os.Getenv("GOPATH"), "src")
-var projectDir = filepath.Join(goSrc, "github.com/src-d/proteus")
+var projectDir = filepath.Join(goSrc, "gopkg.in/src-d/proteus.v1")
 
 func TestNewContext_error(t *testing.T) {
 	createDirWithMultipleFiles("erroring")
 	defer removeDir("erroring")
-	_, err := newContext("github.com/src-d/proteus/fixtures/erroring/multiple")
+	_, err := newContext("gopkg.in/src-d/proteus.v1/fixtures/erroring/multiple")
 	assert.NotNil(t, err)
 }
 
