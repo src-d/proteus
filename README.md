@@ -16,7 +16,7 @@ For an overall overview of the code architecture take a look at [the architectur
 ### Install
 
 ```
-go get -v github.com/src-d/proteus/...
+go get -v gopkg.in/src-d/proteus.v1/...
 ```
 
 ### Requirements
