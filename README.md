@@ -13,6 +13,8 @@ We want to build proteus in a very extensible way, so every step of the generati
 
 For an overall overview of the code architecture take a look at [the architecture documentation](/ARCHITECTURE.m/ARCHITECTURE.md).
 
+You can read more about the motivations behind building proteus in [this blog post](https://blog.sourced.tech/post/proteus/).
+
 ### Install
 
 ```
