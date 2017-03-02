@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -116,8 +117,8 @@ func TestScanStruct(t *testing.T) {
 			),
 			&Struct{
 				Fields: []*Field{
-					{"Foo", NewBasic("int")},
-					{"Bar", NewBasic("string")},
+					{Name: "Foo", Type: NewBasic("int")},
+					{Name: "Bar", Type: NewBasic("string")},
 				},
 			},
 		},
@@ -132,7 +133,7 @@ func TestScanStruct(t *testing.T) {
 			),
 			&Struct{
 				Fields: []*Field{
-					{"Foo", NewBasic("int")},
+					{Name: "Foo", Type: NewBasic("int")},
 				},
 			},
 		},
@@ -147,7 +148,7 @@ func TestScanStruct(t *testing.T) {
 			),
 			&Struct{
 				Fields: []*Field{
-					{"Foo", NewBasic("int")},
+					{Name: "Foo", Type: NewBasic("int")},
 				},
 			},
 		},
@@ -162,7 +163,7 @@ func TestScanStruct(t *testing.T) {
 			),
 			&Struct{
 				Fields: []*Field{
-					{"Foo", NewBasic("int")},
+					{Name: "Foo", Type: NewBasic("int")},
 				},
 			},
 		},
@@ -187,9 +188,9 @@ func TestScanStruct(t *testing.T) {
 			),
 			&Struct{
 				Fields: []*Field{
-					{"Foo", NewBasic("int")},
-					{"Bar", NewBasic("string")},
-					{"Baz", NewBasic("uint64")},
+					{Name: "Foo", Type: NewBasic("int")},
+					{Name: "Bar", Type: NewBasic("string")},
+					{Name: "Baz", Type: NewBasic("uint64")},
 				},
 			},
 		},
@@ -214,8 +215,8 @@ func TestScanStruct(t *testing.T) {
 			),
 			&Struct{
 				Fields: []*Field{
-					{"Foo", NewBasic("int")},
-					{"Bar", NewBasic("string")},
+					{Name: "Foo", Type: NewBasic("int")},
+					{Name: "Bar", Type: NewBasic("string")},
 				},
 			},
 		},
@@ -242,9 +243,9 @@ func TestScanStruct(t *testing.T) {
 			),
 			&Struct{
 				Fields: []*Field{
-					{"Foo", NewBasic("int")},
-					{"Bar", NewBasic("string")},
-					{"Baz", NewBasic("uint64")},
+					{Name: "Foo", Type: NewBasic("int")},
+					{Name: "Bar", Type: NewBasic("string")},
+					{Name: "Baz", Type: NewBasic("uint64")},
 				},
 			},
 		},
@@ -259,7 +260,7 @@ func TestScanStruct(t *testing.T) {
 			),
 			&Struct{
 				Fields: []*Field{
-					{"Baz", NewBasic("uint64")},
+					{Name: "Baz", Type: NewBasic("uint64")},
 				},
 			},
 		},
@@ -429,11 +430,7 @@ func TestScanner(t *testing.T) {
 	require.Equal(1, len(pkg.Enums), "pkg enums")
 	require.Equal("Baz", pkg.Enums[0].Name)
 
-	require.Equal(
-		[]string{"ABaz", "BBaz", "CBaz", "DBaz"},
-		pkg.Enums[0].Values,
-		"enum values",
-	)
+	assertEnumValues(t, pkg.Enums[0].Values, "ABaz", "BBaz", "CBaz", "DBaz")
 
 	require.Equal(0, len(pkg.Funcs), "pkg funcs")
 	require.Equal(4, len(subpkg.Funcs), "subpkg funcs")
@@ -443,24 +440,14 @@ func TestScanner(t *testing.T) {
 	assertFunc(t, findFuncByName("Name", subpkg.Funcs), "Name", "MyContainer", []string{}, []string{"string"}, false)
 }
 
-func TestenumValues_Swap(t *testing.T) {
-	values := enumValues{
-		enumValue{"First", 1},
-		enumValue{"Second", 2},
-		enumValue{"Third", 3},
+func assertEnumValues(t *testing.T, values []*EnumValue, expected ...string) {
+	require := require.New(t)
+	require.Len(values, len(expected), "expected same enum values")
+	for i := range values {
+		require.Equal(expected[i], values[i].Name, "expected same enum value name")
+		require.Equal(fmt.Sprintf("%s ...", values[i].Name), strings.TrimSpace(strings.Join(values[i].Doc, "\n")))
 	}
 
-	require.Equal(t, "Second", values[1].name)
-	require.Equal(t, 2, values[1].pos)
-	require.Equal(t, "Third", values[2].name)
-	require.Equal(t, 3, values[2].pos)
-
-	values.Swap(1, 2)
-
-	require.Equal(t, "Third", values[1].name)
-	require.Equal(t, 3, values[1].pos)
-	require.Equal(t, "Second", values[2].name)
-	require.Equal(t, 2, values[2].pos)
 }
 
 func findFuncByName(name string, fns []*Func) *Func {
@@ -496,6 +483,7 @@ func assertStruct(t *testing.T, s *Struct, name string, generate bool, fields ..
 	for _, f := range fields {
 		require.True(t, s.HasField(f), "should have struct field %q", f)
 	}
+	require.Equal(t, fmt.Sprintf("%s ...", s.Name), strings.TrimSpace(strings.Join(s.Doc, "\n")))
 }
 
 func assertFunc(t *testing.T, fn *Func, name string, recv string, input []string, result []string, variadic bool) {
@@ -514,6 +502,7 @@ func assertFunc(t *testing.T, fn *Func, name string, recv string, input []string
 	}
 
 	require.Equal(t, variadic, fn.IsVariadic, "is variadic")
+	require.Equal(t, fmt.Sprintf("%s ...", fn.Name), strings.TrimSpace(strings.Join(fn.Doc, "\n")))
 }
 
 func typeFrom(t Type) string {

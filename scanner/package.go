@@ -2,6 +2,7 @@ package scanner
 
 import (
 	"fmt"
+	"go/ast"
 	"strings"
 )
 
@@ -220,15 +221,43 @@ func (m Map) UnqualifiedName() string {
 	return m.String()
 }
 
+// Documentable is something whose documentation can be set.
+type Documentable interface {
+	// SetDocs sets the documentation from an AST comment group.
+	SetDocs(*ast.CommentGroup)
+}
+
+// Docs holds the documentation of a struct, enum, value, field, etc.
+type Docs struct {
+	Doc []string
+}
+
+// SetDocs sets the documentation from an AST comment group.
+func (d *Docs) SetDocs(comments *ast.CommentGroup) {
+	for _, c := range strings.Split(comments.Text(), "\n") {
+		if c != "proteus:generate" {
+			d.Doc = append(d.Doc, c)
+		}
+	}
+}
+
 // Enum consists of a list of possible values.
 type Enum struct {
+	Docs
 	Name   string
-	Values []string
+	Values []*EnumValue
+}
+
+// EnumValue is a possible value of an enum.
+type EnumValue struct {
+	Docs
+	Name string
 }
 
 // Struct represents a Go struct with its name and fields.
 // All structs
 type Struct struct {
+	Docs
 	Generate bool
 	Name     string
 	Fields   []*Field
@@ -246,6 +275,7 @@ func (s *Struct) HasField(name string) bool {
 
 // Field contains name and type of a struct field.
 type Field struct {
+	Docs
 	Name string
 	Type Type
 }
@@ -253,6 +283,7 @@ type Field struct {
 // Func is either a function or a method. Receiver will be nil in functions,
 // otherwise it is a method.
 type Func struct {
+	Docs
 	Name string
 	// Receiver will not be nil if it's a method.
 	Receiver Type
