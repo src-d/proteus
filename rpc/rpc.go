@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/src-d/proteus/protobuf"
-	"github.com/src-d/proteus/report"
+	"gopkg.in/src-d/proteus.v1/protobuf"
+	"gopkg.in/src-d/proteus.v1/report"
 
 	"gopkg.in/src-d/go-parse-utils.v1"
 )

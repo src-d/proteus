@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/src-d/proteus/report"
-	"github.com/src-d/proteus/resolver"
-	"github.com/src-d/proteus/scanner"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/src-d/proteus.v1/report"
+	"gopkg.in/src-d/proteus.v1/resolver"
+	"gopkg.in/src-d/proteus.v1/scanner"
 )
 
 func TestToLowerSnakeCase(t *testing.T) {
@@ -636,21 +636,21 @@ func (s *TransformerSuite) TestTransform() {
 	pkgs := s.fixtures()
 	pkg := s.t.Transform(pkgs[0])
 
-	s.Equal("github.com.srcd.proteus.fixtures", pkg.Name)
-	s.Equal("github.com/src-d/proteus/fixtures", pkg.Path)
+	s.Equal("gopkg.in.srcd.proteus.v1.fixtures", pkg.Name)
+	s.Equal("gopkg.in/src-d/proteus.v1/fixtures", pkg.Path)
 	s.Equal(NewStringValue("foo"), pkg.Options["go_package"])
 	s.Equal([]string{
 		"github.com/gogo/protobuf/gogoproto/gogo.proto",
 		"google/protobuf/timestamp.proto",
-		"github.com/src-d/proteus/fixtures/subpkg/generated.proto",
+		"gopkg.in/src-d/proteus.v1/fixtures/subpkg/generated.proto",
 	}, pkg.Imports)
 	s.Equal(1, len(pkg.Enums))
 	s.Equal(4, len(pkg.Messages))
 	s.Equal(0, len(pkg.RPCs))
 
 	pkg = s.t.Transform(pkgs[1])
-	s.Equal("github.com.srcd.proteus.fixtures.subpkg", pkg.Name)
-	s.Equal("github.com/src-d/proteus/fixtures/subpkg", pkg.Path)
+	s.Equal("gopkg.in.srcd.proteus.v1.fixtures.subpkg", pkg.Name)
+	s.Equal("gopkg.in/src-d/proteus.v1/fixtures/subpkg", pkg.Path)
 	s.Equal(NewStringValue("subpkg"), pkg.Options["go_package"])
 	s.Equal([]string{"github.com/gogo/protobuf/gogoproto/gogo.proto"}, pkg.Imports)
 	s.Equal(0, len(pkg.Enums))
@@ -764,7 +764,7 @@ func nullable(t scanner.Type) scanner.Type {
 	return t
 }
 
-const project = "github.com/src-d/proteus"
+const project = "gopkg.in/src-d/proteus.v1"
 
 func projectPath(pkg string) string {
 	return filepath.Join(project, pkg)

@@ -13,9 +13,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/src-d/proteus/protobuf"
-	"github.com/src-d/proteus/resolver"
-	"github.com/src-d/proteus/scanner"
+	"gopkg.in/src-d/proteus.v1/protobuf"
+	"gopkg.in/src-d/proteus.v1/resolver"
+	"gopkg.in/src-d/proteus.v1/scanner"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -311,7 +311,7 @@ func (s *subpkgServiceServer) Point_GeneratedMethodOnPointer(ctx context.Context
 `
 
 func (s *RPCSuite) TestGenerate() {
-	pkg := "github.com/src-d/proteus/fixtures/subpkg"
+	pkg := "gopkg.in/src-d/proteus.v1/fixtures/subpkg"
 	scanner, err := scanner.New(pkg)
 	s.Nil(err)
 
@@ -404,5 +404,5 @@ func TestRPCSuite(t *testing.T) {
 }
 
 func projectPath(path string) string {
-	return filepath.Join(os.Getenv("GOPATH"), "src", "github.com/src-d/proteus", path)
+	return filepath.Join(os.Getenv("GOPATH"), "src", "gopkg.in/src-d/proteus.v1", path)
 }

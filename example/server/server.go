@@ -3,7 +3,7 @@ package server
 import (
 	"net"
 
-	"github.com/src-d/proteus/example"
+	"gopkg.in/src-d/proteus.v1/example"
 
 	"google.golang.org/grpc"
 )

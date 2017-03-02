@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/src-d/proteus/protobuf"
+	"gopkg.in/src-d/proteus.v1/protobuf"
 	"github.com/stretchr/testify/assert"
 
 	"gopkg.in/src-d/go-parse-utils.v1"
 )
 
 func TestContext_isNameDefined(t *testing.T) {
-	pkg, err := parseutil.NewImporter().Import("github.com/src-d/proteus/fixtures")
+	pkg, err := parseutil.NewImporter().Import("gopkg.in/src-d/proteus.v1/fixtures")
 	if err != nil {
 		assert.Fail(t, fmt.Sprintf("could not import project fixtures: %v", err))
 	}

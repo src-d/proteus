@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/src-d/proteus/example/client"
-	"github.com/src-d/proteus/example/server"
+	"gopkg.in/src-d/proteus.v1/example/client"
+	"gopkg.in/src-d/proteus.v1/example/server"
 )
 
 func ExampleProteus() {
