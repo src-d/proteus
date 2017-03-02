@@ -112,6 +112,7 @@ func (t *Transformer) transformFunc(pkg *Package, f *scanner.Func, names nameSet
 
 	output, hasError := removeLastError(f.Output)
 	rpc := &RPC{
+		Docs:       f.Doc,
 		Name:       name,
 		Recv:       receiverName,
 		Method:     f.Name,
@@ -175,13 +176,19 @@ func capitalize(s string) string {
 
 func (t *Transformer) transformEnum(e *scanner.Enum) *Enum {
 	enum := &Enum{
+		Docs:    e.Doc,
 		Name:    e.Name,
 		Options: t.defaultOptionsForScannedEnum(e),
 	}
 
 	for i, v := range e.Values {
-		enum.Values.Add(toUpperSnakeCase(v), uint(i), Options{
-			"(gogoproto.enumvalue_customname)": NewStringValue(v),
+		enum.Values = append(enum.Values, &EnumValue{
+			Docs:  v.Doc,
+			Name:  toUpperSnakeCase(v.Name),
+			Value: uint(i),
+			Options: Options{
+				"(gogoproto.enumvalue_customname)": NewStringValue(v.Name),
+			},
 		})
 	}
 	return enum
@@ -196,6 +203,7 @@ func (t *Transformer) defaultOptionsForScannedEnum(e *scanner.Enum) Options {
 
 func (t *Transformer) transformStruct(pkg *Package, s *scanner.Struct) *Message {
 	msg := &Message{
+		Docs:    s.Doc,
 		Name:    s.Name,
 		Options: t.defaultOptionsForScannedMessage(s),
 	}
@@ -226,6 +234,7 @@ func (t *Transformer) transformField(pkg *Package, msg *Message, field *scanner.
 	)
 
 	f := &Field{
+		Docs:     field.Doc,
 		Name:     toLowerSnakeCase(field.Name),
 		Options:  t.defaultOptionsForStructField(field),
 		Pos:      pos,

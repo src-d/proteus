@@ -399,13 +399,16 @@ func (s *TransformerSuite) TestTransformField() {
 
 func (s *TransformerSuite) TestTransformStruct() {
 	st := &scanner.Struct{
+		Docs: mkDocs("fancy struct"),
 		Name: "Foo",
 		Fields: []*scanner.Field{
 			{
+				Docs: mkDocs("fancy invalid"),
 				Name: "Invalid",
 				Type: scanner.NewBasic("complex64"),
 			},
 			{
+				Docs: mkDocs("fancy bar"),
 				Name: "Bar",
 				Type: scanner.NewBasic("string"),
 			},
@@ -413,8 +416,10 @@ func (s *TransformerSuite) TestTransformStruct() {
 	}
 
 	msg := s.t.transformStruct(&Package{}, st)
+	s.Equal("fancy struct", strings.Join(msg.Docs, "\n"))
 	s.Equal("Foo", msg.Name)
 	s.Equal(1, len(msg.Fields), "should have one field")
+	s.Equal("fancy bar", strings.Join(msg.Fields[0].Docs, "\n"))
 	s.Equal(2, msg.Fields[0].Pos)
 	s.Equal(0, len(msg.Fields[0].Options))
 	s.Equal(1, len(msg.Reserved), "should have reserved field")
@@ -574,6 +579,18 @@ func (s *TransformerSuite) TestTransformFuncReceiver() {
 	s.Equal("Fooer_DoFoo", rpc.Name)
 }
 
+func (s *TransformerSuite) TestTransformFuncComments() {
+	fn := &scanner.Func{
+		Docs:     mkDocs("fooo bar"),
+		Name:     "DoFoo",
+		Receiver: scanner.NewNamed("foo", "Fooer"),
+	}
+	rpc := s.t.transformFunc(new(Package), fn, nameSet{})
+	s.NotNil(rpc)
+	s.Equal("Fooer_DoFoo", rpc.Name)
+	s.Equal("fooo bar", strings.Join(rpc.Docs, "\n"))
+}
+
 func (s *TransformerSuite) TestTransformFuncReceiverInvalid() {
 	fn := &scanner.Func{
 		Name:     "DoFoo",
@@ -620,15 +637,21 @@ func (s *TransformerSuite) TestTransformFuncRepeatedSingle() {
 
 func (s *TransformerSuite) TestTransformEnum() {
 	enum := s.t.transformEnum(&scanner.Enum{
-		Name:   "Foo",
-		Values: []string{"Foo", "Bar", "BarBaz"},
+		Docs: mkDocs("foo bar baz"),
+		Name: "Foo",
+		Values: []*scanner.EnumValue{
+			mkEnumVal("fooo bar", "Foo"),
+			mkEnumVal("baaar bar", "Bar"),
+			mkEnumVal("barbaz bar", "BarBaz"),
+		},
 	})
 
 	s.Equal("Foo", enum.Name)
+	s.Equal("foo bar baz", strings.Join(enum.Docs, "\n"))
 	s.Equal(3, len(enum.Values), "should have same number of values")
-	s.assertEnumVal(enum.Values[0], "FOO", 0)
-	s.assertEnumVal(enum.Values[1], "BAR", 1)
-	s.assertEnumVal(enum.Values[2], "BAR_BAZ", 2)
+	s.assertEnumVal(enum.Values[0], "FOO", 0, "fooo bar")
+	s.assertEnumVal(enum.Values[1], "BAR", 1, "baaar bar")
+	s.assertEnumVal(enum.Values[2], "BAR_BAZ", 2, "barbaz bar")
 	s.Equal(NewLiteralValue("false"), enum.Options["(gogoproto.enumdecl)"], "should drop declaration by default")
 }
 
@@ -734,9 +757,10 @@ func (s *TransformerSuite) assertFieldToField(expected, actual *Field, name stri
 	s.Equal(expected.Options, actual.Options, fmt.Sprintf("Options in %s", name))
 }
 
-func (s *TransformerSuite) assertEnumVal(v *EnumValue, name string, val uint) {
+func (s *TransformerSuite) assertEnumVal(v *EnumValue, name string, val uint, doc string) {
 	s.Equal(name, v.Name)
 	s.Equal(val, v.Value)
+	s.Equal(doc, strings.Join(v.Docs, "\n"))
 }
 
 func (s *TransformerSuite) assertSource(typ Type, src scanner.Type) {
@@ -762,6 +786,19 @@ func repeated(t scanner.Type) scanner.Type {
 func nullable(t scanner.Type) scanner.Type {
 	t.SetNullable(true)
 	return t
+}
+
+func mkEnumVal(doc, name string) *scanner.EnumValue {
+	return &scanner.EnumValue{
+		mkDocs(doc),
+		name,
+	}
+}
+
+func mkDocs(doc ...string) scanner.Docs {
+	return scanner.Docs{
+		Doc: doc,
+	}
 }
 
 const project = "gopkg.in/src-d/proteus.v1"

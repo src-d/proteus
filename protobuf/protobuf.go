@@ -54,6 +54,7 @@ func (p *Package) ServiceName() string {
 
 // Message is the representation of a Protobuf message.
 type Message struct {
+	Docs     []string
 	Name     string
 	Reserved []uint
 	Options  Options
@@ -78,6 +79,7 @@ func (m *Message) isReserved(pos uint) bool {
 
 // Field is the representation of a protobuf message field.
 type Field struct {
+	Docs     []string
 	Name     string
 	Pos      int
 	Repeated bool
@@ -307,21 +309,15 @@ func (*Alias) isType() {}
 
 // Enum is the representation of a protobuf enumeration.
 type Enum struct {
+	Docs    []string
 	Name    string
 	Options Options
-	Values  EnumValues
-}
-
-// EnumValues is a collction of enumeration values.
-type EnumValues []*EnumValue
-
-// Add adds a new value to the list of values of the enum.
-func (v *EnumValues) Add(name string, val uint, options Options) {
-	*v = EnumValues(append(*v, &EnumValue{name, val, options}))
+	Values  []*EnumValue
 }
 
 // EnumValue is a single value in an enumeration.
 type EnumValue struct {
+	Docs    []string
 	Name    string
 	Value   uint
 	Options Options
@@ -329,6 +325,7 @@ type EnumValue struct {
 
 // RPC is a single exposed RPC method in the RPC service.
 type RPC struct {
+	Docs []string
 	Name string
 	// Recv is the name of the receiver Go type. Empty if it's not a method.
 	Recv string
