@@ -146,6 +146,7 @@ func (p *Package) scanObject(ctx *context, o types.Object) {
 					Name:     o.Name(),
 					Generate: ctx.shouldGenerateType(o.Name()),
 				}, s)
+				ctx.trySetDocs(o.Name(), st)
 				p.Structs = append(p.Structs, st)
 				return
 			}
@@ -155,6 +156,7 @@ func (p *Package) scanObject(ctx *context, o types.Object) {
 	case *types.Signature:
 		if ctx.shouldGenerateFunc(nameForFunc(o)) {
 			fn := scanFunc(&Func{Name: o.Name()}, t)
+			ctx.trySetDocs(nameForFunc(o), fn)
 			p.Funcs = append(p.Funcs, fn)
 		}
 	}
@@ -298,6 +300,7 @@ func findStruct(t types.Type) *types.Struct {
 // All values are guaranteed to be sorted by their iota.
 func newEnum(ctx *context, name string, vals []string) *Enum {
 	enum := &Enum{Name: name}
+	ctx.trySetDocs(name, enum)
 	var values enumValues
 	for _, v := range vals {
 		if obj, ok := ctx.consts[v]; ok {
@@ -311,7 +314,9 @@ func newEnum(ctx *context, name string, vals []string) *Enum {
 	sort.Stable(values)
 
 	for _, v := range values {
-		enum.Values = append(enum.Values, v.name)
+		val := &EnumValue{Name: v.name}
+		ctx.trySetDocs(v.name, val)
+		enum.Values = append(enum.Values, val)
 	}
 
 	return enum

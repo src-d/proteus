@@ -106,6 +106,18 @@ func findObjectsOfType(pkg *ast.Package, kind ast.ObjKind) map[string]*ast.Objec
 	return objects
 }
 
+func (ctx *context) trySetDocs(name string, obj Documentable) {
+	if typ, ok := ctx.types[name]; ok && typ.Doc != nil {
+		obj.SetDocs(typ.Doc)
+	} else if fn, ok := ctx.funcs[name]; ok && fn.Doc != nil {
+		obj.SetDocs(fn.Doc)
+	} else if v, ok := ctx.consts[name]; ok {
+		if spec, ok := v.Decl.(*ast.ValueSpec); ok {
+			obj.SetDocs(spec.Doc)
+		}
+	}
+}
+
 const genComment = `//proteus:generate`
 
 func (ctx *context) shouldGenerateType(name string) bool {

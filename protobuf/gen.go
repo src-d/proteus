@@ -85,6 +85,7 @@ func writePackageData(buf *bytes.Buffer, pkg *Package) {
 }
 
 func writeMessage(buf *bytes.Buffer, msg *Message) {
+	writeDocs(buf, msg.Docs, false)
 	buf.WriteString(fmt.Sprintf("message %s {\n", msg.Name))
 	writeOptions(buf, msg.Options, true)
 
@@ -102,6 +103,7 @@ func writeMessage(buf *bytes.Buffer, msg *Message) {
 	}
 
 	for _, f := range msg.Fields {
+		writeDocs(buf, f.Docs, true)
 		buf.WriteRune('\t')
 		if f.Repeated {
 			buf.WriteString("repeated ")
@@ -121,10 +123,12 @@ func writeMessage(buf *bytes.Buffer, msg *Message) {
 }
 
 func writeEnum(buf *bytes.Buffer, enum *Enum) {
+	writeDocs(buf, enum.Docs, false)
 	buf.WriteString(fmt.Sprintf("enum %s {\n", enum.Name))
 	writeOptions(buf, enum.Options, true)
 
 	for _, v := range enum.Values {
+		writeDocs(buf, v.Docs, true)
 		buf.WriteString(fmt.Sprintf("\t%s = %d", v.Name, v.Value))
 		if len(v.Options) > 0 {
 			buf.WriteRune(' ')
@@ -156,9 +160,21 @@ func writeFieldOptions(buf *bytes.Buffer, options Options) {
 	buf.WriteRune(']')
 }
 
+func writeDocs(buf *bytes.Buffer, docs []string, indent bool) {
+	for _, d := range docs {
+		if indent {
+			buf.WriteRune('\t')
+		}
+		buf.WriteString("// ")
+		buf.WriteString(d)
+		buf.WriteRune('\n')
+	}
+}
+
 func writeService(buf *bytes.Buffer, pkg *Package) {
 	buf.WriteString(fmt.Sprintf("service %s {\n", pkg.ServiceName()))
 	for _, rpc := range pkg.RPCs {
+		writeDocs(buf, rpc.Docs, true)
 		buf.WriteString(fmt.Sprintf(
 			"\trpc %s (%s) returns (%s);\n",
 			rpc.Name,

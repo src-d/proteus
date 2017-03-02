@@ -12,4 +12,4 @@
 // protobuf enumerations.
 // All the exported functions and methods will be turned into protobuf RPC
 // services.
-package proteus
+package proteus // import "gopkg.in/src-d/proteus.v1"
