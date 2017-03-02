@@ -1,4 +1,4 @@
-package rpc
+package rpc // import "gopkg.in/src-d/proteus.v1/rpc"
 
 import (
 	"fmt"

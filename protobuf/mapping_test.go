@@ -29,7 +29,7 @@ func TestToGoOutPath(t *testing.T) {
 		"a": &ProtoType{},
 	}.ToGoOutPath()) // No Immport and no GoImport
 	assert.Equal(t, "", TypeMappings{
-		"a": &ProtoType{GoImport: "github.com/src-d/proteus"},
+		"a": &ProtoType{GoImport: "gopkg.in/src-d/proteus.v1"},
 	}.ToGoOutPath()) // No Immport
 	assert.Equal(t, "", TypeMappings{
 		"a": &ProtoType{Import: "src-d/proteus"},
