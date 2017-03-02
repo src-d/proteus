@@ -6,7 +6,6 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "example";
 
-// 
 message Category {
 	option (gogoproto.typedecl) = false;
 	int64 id = 1 [(gogoproto.customname) = "ID"];
@@ -21,7 +20,6 @@ message Category {
 
 // CategoryOptions is not marked for generations, but it is used in another
 // structs, so it will be generated because of it.
-// 
 message CategoryOptions {
 	option (gogoproto.typedecl) = false;
 	bool show_prices = 1;
@@ -34,7 +32,6 @@ message MyTime {
 	string name = 2;
 }
 
-// 
 message Product {
 	option (gogoproto.typedecl) = false;
 	int64 id = 1 [(gogoproto.customname) = "ID"];
@@ -69,28 +66,19 @@ message RandomNumberResponse {
 }
 
 // Type will be transformed into an enum.
-// 
 enum Type {
 	option (gogoproto.enumdecl) = false;
 	option (gogoproto.goproto_enum_prefix) = false;
-	// 
 	PUBLIC = 0 [(gogoproto.enumvalue_customname) = "Public"];
-	// 
 	PRIVATE = 1 [(gogoproto.enumvalue_customname) = "Private"];
-	// 
 	CUSTOM = 2 [(gogoproto.enumvalue_customname) = "Custom"];
 }
 
 service ExampleService {
-	// 
 	rpc GetAlphaTime (gopkg.in.srcd.proteus.v1.example.GetAlphaTimeRequest) returns (gopkg.in.srcd.proteus.v1.example.MyTime);
-	// 
 	rpc GetOmegaTime (gopkg.in.srcd.proteus.v1.example.GetOmegaTimeRequest) returns (gopkg.in.srcd.proteus.v1.example.MyTime);
-	// 
 	rpc GetPhone (gopkg.in.srcd.proteus.v1.example.GetPhoneRequest) returns (gopkg.in.srcd.proteus.v1.example.Product);
-	// 
 	rpc RandomCategory (gopkg.in.srcd.proteus.v1.example.RandomCategoryRequest) returns (gopkg.in.srcd.proteus.v1.example.CategoryOptions);
-	// 
 	rpc RandomNumber (gopkg.in.srcd.proteus.v1.example.RandomNumberRequest) returns (gopkg.in.srcd.proteus.v1.example.RandomNumberResponse);
 }
 

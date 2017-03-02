@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"gopkg.in/src-d/proteus.v1/report"
-	"gopkg.in/src-d/proteus.v1/scanner"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/src-d/proteus.v1/report"
+	"gopkg.in/src-d/proteus.v1/scanner"
 )
 
 const project = "gopkg.in/src-d/proteus.v1"
@@ -192,6 +192,7 @@ func (s *ResolverSuite) TestResolve() {
 	s.Equal(4, len(pkgs[1].Funcs), "num of funcs in subpkg")
 
 	s.Equal(&scanner.Func{
+		Docs: mkDocs("Generated ..."),
 		Name: "Generated",
 		Input: []scanner.Type{
 			scanner.NewBasic("string"),
@@ -203,6 +204,7 @@ func (s *ResolverSuite) TestResolve() {
 	}, findFuncByName("Generated", pkgs[1].Funcs))
 
 	s.Equal(&scanner.Func{
+		Docs: mkDocs("GeneratedMethod ..."),
 		Name: "GeneratedMethod",
 		Input: []scanner.Type{
 			scanner.NewBasic("int32"),
@@ -214,6 +216,7 @@ func (s *ResolverSuite) TestResolve() {
 	}, findFuncByName("GeneratedMethod", pkgs[1].Funcs))
 
 	s.Equal(&scanner.Func{
+		Docs: mkDocs("GeneratedMethodOnPointer ..."),
 		Name: "GeneratedMethodOnPointer",
 		Input: []scanner.Type{
 			scanner.NewBasic("bool"),
@@ -225,6 +228,7 @@ func (s *ResolverSuite) TestResolve() {
 	}, findFuncByName("GeneratedMethodOnPointer", pkgs[1].Funcs))
 
 	s.Equal(&scanner.Func{
+		Docs:  mkDocs("Name ..."),
 		Name:  "Name",
 		Input: []scanner.Type{},
 		Output: []scanner.Type{
@@ -252,9 +256,13 @@ func assertStrSet(t *testing.T, set map[string]struct{}, expected ...string) {
 }
 
 func enum(name string, values ...string) *scanner.Enum {
+	var vals []*scanner.EnumValue
+	for _, v := range values {
+		vals = append(vals, &scanner.EnumValue{Name: v})
+	}
 	return &scanner.Enum{
 		Name:   name,
-		Values: values,
+		Values: vals,
 	}
 }
 
@@ -275,4 +283,8 @@ func findFuncByName(name string, fns []*scanner.Func) *scanner.Func {
 func nullable(t scanner.Type) scanner.Type {
 	t.SetNullable(true)
 	return t
+}
+
+func mkDocs(docs ...string) scanner.Docs {
+	return scanner.Docs{Doc: docs}
 }

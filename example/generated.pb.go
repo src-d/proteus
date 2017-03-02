@@ -51,7 +51,6 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // Type will be transformed into an enum.
-//
 var Type_name = map[int32]string{
 	0: "PUBLIC",
 	1: "PRIVATE",
@@ -325,15 +324,10 @@ const _ = grpc.SupportPackageIsVersion4
 // Client API for ExampleService service
 
 type ExampleServiceClient interface {
-	//
 	GetAlphaTime(ctx context.Context, in *GetAlphaTimeRequest, opts ...grpc.CallOption) (*MyTime, error)
-	//
 	GetOmegaTime(ctx context.Context, in *GetOmegaTimeRequest, opts ...grpc.CallOption) (*MyTime, error)
-	//
 	GetPhone(ctx context.Context, in *GetPhoneRequest, opts ...grpc.CallOption) (*Product, error)
-	//
 	RandomCategory(ctx context.Context, in *RandomCategoryRequest, opts ...grpc.CallOption) (*CategoryOptions, error)
-	//
 	RandomNumber(ctx context.Context, in *RandomNumberRequest, opts ...grpc.CallOption) (*RandomNumberResponse, error)
 }
 
@@ -393,15 +387,10 @@ func (c *exampleServiceClient) RandomNumber(ctx context.Context, in *RandomNumbe
 // Server API for ExampleService service
 
 type ExampleServiceServer interface {
-	//
 	GetAlphaTime(context.Context, *GetAlphaTimeRequest) (*MyTime, error)
-	//
 	GetOmegaTime(context.Context, *GetOmegaTimeRequest) (*MyTime, error)
-	//
 	GetPhone(context.Context, *GetPhoneRequest) (*Product, error)
-	//
 	RandomCategory(context.Context, *RandomCategoryRequest) (*CategoryOptions, error)
-	//
 	RandomNumber(context.Context, *RandomNumberRequest) (*RandomNumberResponse, error)
 }
 

@@ -233,11 +233,21 @@ type Docs struct {
 }
 
 // SetDocs sets the documentation from an AST comment group.
+// It removes the //proteus:generate comment from the comments.
 func (d *Docs) SetDocs(comments *ast.CommentGroup) {
-	for _, c := range strings.Split(comments.Text(), "\n") {
-		if c != "proteus:generate" {
-			d.Doc = append(d.Doc, c)
+	var list []*ast.Comment
+	if comments != nil {
+		for _, c := range comments.List {
+			if !strings.HasPrefix(c.Text, genComment) {
+				list = append(list, c)
+			}
 		}
+	}
+
+	if len(list) > 0 {
+		d.Doc = strings.Split(strings.TrimSpace(
+			(&ast.CommentGroup{List: list}).Text(),
+		), "\n")
 	}
 }
 

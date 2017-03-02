@@ -2,6 +2,7 @@ package protobuf
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -155,7 +156,14 @@ var DefaultMappings = TypeMappings{
 // For more info see src-d/proteus#41
 func (t TypeMappings) ToGoOutPath() string {
 	var strs []string
-	for _, value := range t {
+	var keys []string
+	for k := range t {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		value := t[k]
 		if value.Import != "" && value.GoImport != "" {
 			strs = append(strs, fmt.Sprintf("M%s=%s", value.Import, value.GoImport))
 		}
