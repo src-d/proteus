@@ -90,6 +90,8 @@ type Options struct {
 
 In that example, even if `Options` is not explicitly generated, it will be because it is required to generate `Preference`.
 
+So far, this does not happen if the field is an enum. It is a known problem and we are working on fixing it. Until said fix lands, please, explicitly mark enums to be generated.
+
 **Struct embedding**
 
 You can embed structs as usual and they will be generated as if the struct had the fields of the embedded struct.
