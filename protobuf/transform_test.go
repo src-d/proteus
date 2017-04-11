@@ -425,6 +425,36 @@ func (s *TransformerSuite) TestTransformStruct() {
 	s.Equal(1, len(msg.Reserved), "should have reserved field")
 	s.Equal(uint(1), msg.Reserved[0])
 	s.Equal(NewLiteralValue("false"), msg.Options["(gogoproto.typedecl)"], "should drop declaration by default")
+	s.Equal(NewLiteralValue("false"), msg.Options["(gogoproto.typedecl)"], "should drop declaration by default")
+	s.NotContains(msg.Options, "(gogoproto.goproto_stringer)", "not contains goproto_stringer")
+}
+
+func (s *TransformerSuite) TestTransformStructImplementingString() {
+	st := &scanner.Struct{
+		Name: "Foo",
+		Fields: []*scanner.Field{
+			{
+				Name: "Invalid",
+				Type: scanner.NewBasic("complex64"),
+			},
+			{
+				Name: "Bar",
+				Type: scanner.NewBasic("string"),
+			},
+		},
+		ImplementsString: true,
+	}
+
+	msg := s.t.transformStruct(&Package{}, st)
+	s.Equal("Foo", msg.Name)
+	s.Equal(1, len(msg.Fields), "should have one field")
+	s.Equal(2, msg.Fields[0].Pos)
+	s.Equal(0, len(msg.Fields[0].Options))
+	s.Equal(1, len(msg.Reserved), "should have reserved field")
+	s.Equal(uint(1), msg.Reserved[0])
+	s.Equal(NewLiteralValue("false"), msg.Options["(gogoproto.typedecl)"], "should drop declaration by default")
+	s.Contains(msg.Options, "(gogoproto.goproto_stringer)", "contains goproto_stringer")
+	s.Equal(NewLiteralValue("false"), msg.Options["(gogoproto.goproto_stringer)"], "goproto_stringer is false")
 }
 
 func (s *TransformerSuite) TestTransformFuncMultiple() {
@@ -653,6 +683,28 @@ func (s *TransformerSuite) TestTransformEnum() {
 	s.assertEnumVal(enum.Values[1], "BAR", 1, "baaar bar")
 	s.assertEnumVal(enum.Values[2], "BAR_BAZ", 2, "barbaz bar")
 	s.Equal(NewLiteralValue("false"), enum.Options["(gogoproto.enumdecl)"], "should drop declaration by default")
+	s.NotContains(enum.Options, "(gogoproto.goproto_enum_stringer)", "not contains goproto_stringer")
+}
+
+func (s *TransformerSuite) TestTransformEnumImplementingString() {
+	enum := s.t.transformEnum(&scanner.Enum{
+		Name: "Foo",
+		Values: []*scanner.EnumValue{
+			mkEnumVal("fooo bar", "Foo"),
+			mkEnumVal("baaar bar", "Bar"),
+			mkEnumVal("barbaz bar", "BarBaz"),
+		},
+		ImplementsString: true,
+	})
+
+	s.Equal("Foo", enum.Name)
+	s.Equal(3, len(enum.Values), "should have same number of values")
+	s.assertEnumVal(enum.Values[0], "FOO", 0, "fooo bar")
+	s.assertEnumVal(enum.Values[1], "BAR", 1, "baaar bar")
+	s.assertEnumVal(enum.Values[2], "BAR_BAZ", 2, "barbaz bar")
+	s.Equal(NewLiteralValue("false"), enum.Options["(gogoproto.enumdecl)"], "should drop declaration by default")
+	s.Contains(enum.Options, "(gogoproto.goproto_enum_stringer)", "contains goproto_stringer")
+	s.Equal(NewLiteralValue("false"), enum.Options["(gogoproto.goproto_enum_stringer)"], "should drop declaration by default")
 }
 
 func (s *TransformerSuite) TestTransform() {

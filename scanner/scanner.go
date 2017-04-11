@@ -121,34 +121,44 @@ func buildPackage(ctx *context, gopkg *types.Package) (*Package, error) {
 	}
 
 	for _, o := range objs {
-		pkg.scanObject(ctx, o)
+		if err := pkg.scanObject(ctx, o); err != nil {
+			return nil, err
+		}
 	}
 
 	pkg.collectEnums(ctx)
 	return pkg, nil
 }
 
-func (p *Package) scanObject(ctx *context, o types.Object) {
+func (p *Package) scanObject(ctx *context, o types.Object) error {
 	if !o.Exported() {
-		return
+		return nil
 	}
 
 	switch t := o.Type().(type) {
 	case *types.Named:
+		hasStringMethod, err := implementsString(t)
+		if err != nil {
+			return err
+		}
 		switch o.(type) {
 		case *types.Const:
 			if _, ok := t.Underlying().(*types.Basic); ok {
-				scanEnumValue(ctx, o.Name(), t)
+				scanEnumValue(ctx, o.Name(), t, hasStringMethod)
 			}
 		case *types.TypeName:
 			if s, ok := t.Underlying().(*types.Struct); ok {
-				st := scanStruct(&Struct{
-					Name:     o.Name(),
-					Generate: ctx.shouldGenerateType(o.Name()),
-				}, s)
+				st := scanStruct(
+					&Struct{
+						Name:             o.Name(),
+						Generate:         ctx.shouldGenerateType(o.Name()),
+						ImplementsString: hasStringMethod,
+					},
+					s,
+				)
 				ctx.trySetDocs(o.Name(), st)
 				p.Structs = append(p.Structs, st)
-				return
+				return nil
 			}
 
 			p.Aliases[objName(t.Obj())] = scanType(t.Underlying())
@@ -160,6 +170,36 @@ func (p *Package) scanObject(ctx *context, o types.Object) {
 			p.Funcs = append(p.Funcs, fn)
 		}
 	}
+
+	return nil
+}
+
+func implementsString(t *types.Named) (bool, error) {
+	for i := 0; i < t.NumMethods(); i++ {
+		m := t.Method(i)
+		if m.Name() != "String" {
+			continue
+		}
+
+		sign := m.Type().(*types.Signature)
+		if sign.Params().Len() != 0 {
+			return false, fmt.Errorf("type %s implements a String method that does not satisfy fmt.Stringer (wrong number of parameters)", t.Obj().Name())
+		}
+
+		results := sign.Results()
+		if results == nil || results.Len() != 1 {
+			return false, fmt.Errorf("type %s implements a String method that does not satisfy fmt.Stringer (wrong number of results)", t.Obj().Name())
+		}
+
+		if returnType, ok := results.At(0).Type().(*types.Basic); ok {
+			if returnType.Name() == "string" {
+				return true, nil
+			}
+			return false, fmt.Errorf("type %s implements a String method that does not satisfy fmt.Stringer (wrong type of result)", t.Obj().Name())
+		}
+	}
+
+	return false, nil
 }
 
 func nameForFunc(o types.Object) (name string) {
@@ -212,9 +252,10 @@ func scanType(typ types.Type) (t Type) {
 	return
 }
 
-func scanEnumValue(ctx *context, name string, named *types.Named) {
+func scanEnumValue(ctx *context, name string, named *types.Named, hasStringMethod bool) {
 	typ := objName(named.Obj())
 	ctx.enumValues[typ] = append(ctx.enumValues[typ], name)
+	ctx.enumWithString = append(ctx.enumWithString, typ)
 }
 
 func scanStruct(s *Struct, elem *types.Struct) *Struct {
@@ -298,8 +339,8 @@ func findStruct(t types.Type) *types.Struct {
 // The values are looked up in the ast package and only if they are constants
 // they will be added as enum values.
 // All values are guaranteed to be sorted by their iota.
-func newEnum(ctx *context, name string, vals []string) *Enum {
-	enum := &Enum{Name: name}
+func newEnum(ctx *context, name string, vals []string, hasStringMethod bool) *Enum {
+	enum := &Enum{Name: name, ImplementsString: hasStringMethod}
 	ctx.trySetDocs(name, enum)
 	var values enumValues
 	for _, v := range vals {

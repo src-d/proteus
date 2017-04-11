@@ -194,11 +194,17 @@ func (t *Transformer) transformEnum(e *scanner.Enum) *Enum {
 	return enum
 }
 
-func (t *Transformer) defaultOptionsForScannedEnum(e *scanner.Enum) Options {
-	return Options{
+func (t *Transformer) defaultOptionsForScannedEnum(e *scanner.Enum) (opts Options) {
+	opts = Options{
 		"(gogoproto.enumdecl)":            NewLiteralValue("false"),
 		"(gogoproto.goproto_enum_prefix)": NewLiteralValue("false"),
 	}
+
+	if e.ImplementsString {
+		opts["(gogoproto.goproto_enum_stringer)"] = NewLiteralValue("false")
+	}
+
+	return
 }
 
 func (t *Transformer) transformStruct(pkg *Package, s *scanner.Struct) *Message {
@@ -221,10 +227,16 @@ func (t *Transformer) transformStruct(pkg *Package, s *scanner.Struct) *Message 
 	return msg
 }
 
-func (t *Transformer) defaultOptionsForScannedMessage(s *scanner.Struct) Options {
-	return Options{
+func (t *Transformer) defaultOptionsForScannedMessage(s *scanner.Struct) (opts Options) {
+	opts = Options{
 		"(gogoproto.typedecl)": NewLiteralValue("false"),
 	}
+
+	if s.ImplementsString {
+		opts["(gogoproto.goproto_stringer)"] = NewLiteralValue("false")
+	}
+
+	return
 }
 
 func (t *Transformer) transformField(pkg *Package, msg *Message, field *scanner.Field, pos int) *Field {

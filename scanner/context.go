@@ -28,6 +28,8 @@ type context struct {
 	// enumValues contains all the values found until a point in time.
 	// It is indexed by qualified type name e.g: time.Time
 	enumValues map[string][]string
+	// enums with string method
+	enumWithString []string
 }
 
 func newContext(path string) (*context, error) {
@@ -38,10 +40,11 @@ func newContext(path string) (*context, error) {
 
 	types, funcs := findPkgTypesAndFuncs(pkg)
 	return &context{
-		types:      types,
-		funcs:      funcs,
-		consts:     findObjectsOfType(pkg, ast.Con),
-		enumValues: make(map[string][]string),
+		types:          types,
+		funcs:          funcs,
+		consts:         findObjectsOfType(pkg, ast.Con),
+		enumValues:     make(map[string][]string),
+		enumWithString: []string{},
 	}, nil
 }
 
