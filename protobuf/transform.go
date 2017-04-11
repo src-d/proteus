@@ -229,7 +229,8 @@ func (t *Transformer) transformStruct(pkg *Package, s *scanner.Struct) *Message 
 
 func (t *Transformer) defaultOptionsForScannedMessage(s *scanner.Struct) (opts Options) {
 	opts = Options{
-		"(gogoproto.typedecl)": NewLiteralValue("false"),
+		"(gogoproto.typedecl)":        NewLiteralValue("false"),
+		"(gogoproto.goproto_getters)": NewLiteralValue("false"),
 	}
 
 	if s.IsStringer {

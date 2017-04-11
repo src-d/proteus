@@ -427,6 +427,7 @@ func (s *TransformerSuite) TestTransformStruct() {
 	s.Equal(NewLiteralValue("false"), msg.Options["(gogoproto.typedecl)"], "should drop declaration by default")
 	s.Equal(NewLiteralValue("false"), msg.Options["(gogoproto.typedecl)"], "should drop declaration by default")
 	s.NotContains(msg.Options, "(gogoproto.goproto_stringer)", "not contains goproto_stringer")
+	s.Equal(NewLiteralValue("false"), msg.Options["(gogoproto.goproto_getters)"], "should drop getters by default")
 }
 
 func (s *TransformerSuite) TestTransformStructIsStringer() {
@@ -455,6 +456,7 @@ func (s *TransformerSuite) TestTransformStructIsStringer() {
 	s.Equal(NewLiteralValue("false"), msg.Options["(gogoproto.typedecl)"], "should drop declaration by default")
 	s.Contains(msg.Options, "(gogoproto.goproto_stringer)", "contains goproto_stringer")
 	s.Equal(NewLiteralValue("false"), msg.Options["(gogoproto.goproto_stringer)"], "goproto_stringer is false")
+	s.Equal(NewLiteralValue("false"), msg.Options["(gogoproto.goproto_getters)"], "should drop getters by default")
 }
 
 func (s *TransformerSuite) TestTransformFuncMultiple() {
