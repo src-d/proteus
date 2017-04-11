@@ -43,6 +43,10 @@ func (c *Client) RequestPhone() (*example.Product, error) {
 	return c.GetPhone(context.Background(), &example.GetPhoneRequest{})
 }
 
+func (c *Client) RequestDurationForLength(meters int64) (*example.MyDuration, error) {
+	return c.GetDurationForLength(context.Background(), &example.GetDurationForLengthRequest{meters})
+}
+
 func NewClient(addr string) (*Client, error) {
 	conn, err := grpc.Dial("localhost:8001", grpc.WithInsecure())
 	if err != nil {

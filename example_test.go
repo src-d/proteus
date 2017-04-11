@@ -3,6 +3,7 @@ package proteus
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"gopkg.in/src-d/proteus.v1/example/client"
 	"gopkg.in/src-d/proteus.v1/example/server"
@@ -53,6 +54,12 @@ func ExampleProteus() {
 	fmt.Println(product.Name)
 	fmt.Println(strings.Join(product.Tags, ", "))
 
+	duration, err := c.RequestDurationForLength(299792458)
+	if err != nil {
+		panic(fmt.Sprintf("could not receive duration: %s", err))
+	}
+	fmt.Printf("Duration: %d", duration.Duration/time.Second)
+
 	// Output: 4
 	// true
 	// true
@@ -60,4 +67,5 @@ func ExampleProteus() {
 	// omega: Dec 12, 2012 at 10:30am
 	// MiPhone
 	// cool, mi, phone
+	// Duration: 1
 }

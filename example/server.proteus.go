@@ -16,6 +16,11 @@ func (s *exampleServiceServer) GetAlphaTime(ctx context.Context, in *GetAlphaTim
 	result = &aux
 	return
 }
+func (s *exampleServiceServer) GetDurationForLength(ctx context.Context, in *GetDurationForLengthRequest) (result *MyDuration, err error) {
+	result = new(MyDuration)
+	result = GetDurationForLength(in.Arg1)
+	return
+}
 func (s *exampleServiceServer) GetOmegaTime(ctx context.Context, in *GetOmegaTimeRequest) (result *MyTime, err error) {
 	result = new(MyTime)
 	result, err = GetOmegaTime()

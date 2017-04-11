@@ -135,8 +135,7 @@ var DefaultMappings = TypeMappings{
 		),
 	},
 	"time.Duration": &ProtoType{
-		Name:     "int64",
-		Basic:    true,
+		Name:     "Duration",
 		Package:  "google.protobuf",
 		Import:   "google/protobuf/duration.proto",
 		GoImport: "github.com/gogo/protobuf/types",

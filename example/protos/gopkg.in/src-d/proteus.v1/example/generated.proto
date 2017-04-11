@@ -3,6 +3,7 @@ package gopkg.in.srcd.proteus.v1.example;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
 
 option go_package = "example";
 
@@ -27,6 +28,12 @@ message CategoryOptions {
 	bool can_buy = 2;
 }
 
+message MyDuration {
+	option (gogoproto.typedecl) = false;
+	google.protobuf.Duration duration = 1 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+	string name = 2;
+}
+
 message MyTime {
 	option (gogoproto.typedecl) = false;
 	google.protobuf.Timestamp time = 1 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
@@ -46,6 +53,10 @@ message Product {
 }
 
 message GetAlphaTimeRequest {
+}
+
+message GetDurationForLengthRequest {
+	int64 arg1 = 1;
 }
 
 message GetOmegaTimeRequest {
@@ -78,6 +89,7 @@ enum Type {
 
 service ExampleService {
 	rpc GetAlphaTime (gopkg.in.srcd.proteus.v1.example.GetAlphaTimeRequest) returns (gopkg.in.srcd.proteus.v1.example.MyTime);
+	rpc GetDurationForLength (gopkg.in.srcd.proteus.v1.example.GetDurationForLengthRequest) returns (gopkg.in.srcd.proteus.v1.example.MyDuration);
 	rpc GetOmegaTime (gopkg.in.srcd.proteus.v1.example.GetOmegaTimeRequest) returns (gopkg.in.srcd.proteus.v1.example.MyTime);
 	rpc GetPhone (gopkg.in.srcd.proteus.v1.example.GetPhoneRequest) returns (gopkg.in.srcd.proteus.v1.example.Product);
 	rpc RandomCategory (gopkg.in.srcd.proteus.v1.example.RandomCategoryRequest) returns (gopkg.in.srcd.proteus.v1.example.CategoryOptions);
