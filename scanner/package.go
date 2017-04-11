@@ -266,9 +266,9 @@ func (d *Docs) SetDocs(comments *ast.CommentGroup) {
 // Enum consists of a list of possible values.
 type Enum struct {
 	Docs
-	Name             string
-	Values           []*EnumValue
-	ImplementsString bool
+	Name       string
+	Values     []*EnumValue
+	IsStringer bool
 }
 
 // EnumValue is a possible value of an enum.
@@ -281,10 +281,10 @@ type EnumValue struct {
 // All structs
 type Struct struct {
 	Docs
-	Generate         bool
-	Name             string
-	Fields           []*Field
-	ImplementsString bool
+	Generate   bool
+	Name       string
+	Fields     []*Field
+	IsStringer bool
 }
 
 // HasField reports wether a struct has a given field name.

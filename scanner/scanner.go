@@ -150,9 +150,9 @@ func (p *Package) scanObject(ctx *context, o types.Object) error {
 			if s, ok := t.Underlying().(*types.Struct); ok {
 				st := scanStruct(
 					&Struct{
-						Name:             o.Name(),
-						Generate:         ctx.shouldGenerateType(o.Name()),
-						ImplementsString: hasStringMethod,
+						Name:       o.Name(),
+						Generate:   ctx.shouldGenerateType(o.Name()),
+						IsStringer: hasStringMethod,
 					},
 					s,
 				)
@@ -340,7 +340,7 @@ func findStruct(t types.Type) *types.Struct {
 // they will be added as enum values.
 // All values are guaranteed to be sorted by their iota.
 func newEnum(ctx *context, name string, vals []string, hasStringMethod bool) *Enum {
-	enum := &Enum{Name: name, ImplementsString: hasStringMethod}
+	enum := &Enum{Name: name, IsStringer: hasStringMethod}
 	ctx.trySetDocs(name, enum)
 	var values enumValues
 	for _, v := range vals {

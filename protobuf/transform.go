@@ -200,7 +200,7 @@ func (t *Transformer) defaultOptionsForScannedEnum(e *scanner.Enum) (opts Option
 		"(gogoproto.goproto_enum_prefix)": NewLiteralValue("false"),
 	}
 
-	if e.ImplementsString {
+	if e.IsStringer {
 		opts["(gogoproto.goproto_enum_stringer)"] = NewLiteralValue("false")
 	}
 
@@ -232,7 +232,7 @@ func (t *Transformer) defaultOptionsForScannedMessage(s *scanner.Struct) (opts O
 		"(gogoproto.typedecl)": NewLiteralValue("false"),
 	}
 
-	if s.ImplementsString {
+	if s.IsStringer {
 		opts["(gogoproto.goproto_stringer)"] = NewLiteralValue("false")
 	}
 

@@ -429,7 +429,7 @@ func (s *TransformerSuite) TestTransformStruct() {
 	s.NotContains(msg.Options, "(gogoproto.goproto_stringer)", "not contains goproto_stringer")
 }
 
-func (s *TransformerSuite) TestTransformStructImplementingString() {
+func (s *TransformerSuite) TestTransformStructIsStringer() {
 	st := &scanner.Struct{
 		Name: "Foo",
 		Fields: []*scanner.Field{
@@ -442,7 +442,7 @@ func (s *TransformerSuite) TestTransformStructImplementingString() {
 				Type: scanner.NewBasic("string"),
 			},
 		},
-		ImplementsString: true,
+		IsStringer: true,
 	}
 
 	msg := s.t.transformStruct(&Package{}, st)
@@ -686,7 +686,7 @@ func (s *TransformerSuite) TestTransformEnum() {
 	s.NotContains(enum.Options, "(gogoproto.goproto_enum_stringer)", "not contains goproto_stringer")
 }
 
-func (s *TransformerSuite) TestTransformEnumImplementingString() {
+func (s *TransformerSuite) TestTransformEnumIsStringer() {
 	enum := s.t.transformEnum(&scanner.Enum{
 		Name: "Foo",
 		Values: []*scanner.EnumValue{
@@ -694,7 +694,7 @@ func (s *TransformerSuite) TestTransformEnumImplementingString() {
 			mkEnumVal("baaar bar", "Bar"),
 			mkEnumVal("barbaz bar", "BarBaz"),
 		},
-		ImplementsString: true,
+		IsStringer: true,
 	})
 
 	s.Equal("Foo", enum.Name)
