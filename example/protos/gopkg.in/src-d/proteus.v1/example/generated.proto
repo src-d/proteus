@@ -7,6 +7,7 @@ import "google/protobuf/timestamp.proto";
 option go_package = "example";
 
 message Category {
+	option (gogoproto.goproto_stringer) = false;
 	option (gogoproto.typedecl) = false;
 	int64 id = 1 [(gogoproto.customname) = "ID"];
 	google.protobuf.Timestamp created_at = 2 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
@@ -69,6 +70,7 @@ message RandomNumberResponse {
 enum Type {
 	option (gogoproto.enumdecl) = false;
 	option (gogoproto.goproto_enum_prefix) = false;
+	option (gogoproto.goproto_enum_stringer) = false;
 	PUBLIC = 0 [(gogoproto.enumvalue_customname) = "Public"];
 	PRIVATE = 1 [(gogoproto.enumvalue_customname) = "Private"];
 	CUSTOM = 2 [(gogoproto.enumvalue_customname) = "Custom"];

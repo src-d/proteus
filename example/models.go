@@ -27,6 +27,10 @@ type Category struct {
 	Options CategoryOptions
 }
 
+func (c *Category) String() string {
+	return c.Name
+}
+
 type Tags []string
 
 // Type will be transformed into an enum.
@@ -38,6 +42,18 @@ const (
 	Private
 	Custom
 )
+
+func (t Type) String() string {
+	switch t {
+	case Public:
+		return "Public"
+	case Private:
+		return "Private"
+	case Custom:
+		return "Custom"
+	}
+	return "UnknownType"
+}
 
 // Color does not have proteus:generate in a comment, so all fields of
 // type Color will be treated as just string, not as an enum.

@@ -30,10 +30,22 @@ func (p *Package) collectEnums(ctx *context) {
 				continue
 			}
 
-			p.Enums = append(p.Enums, newEnum(ctx, name, vals))
+			hasStringMethod := containsString(ctx.enumWithString, k)
+
+			p.Enums = append(p.Enums, newEnum(ctx, name, vals, hasStringMethod))
 			delete(p.Aliases, k)
 		}
 	}
+}
+
+func containsString(arr []string, s string) bool {
+	for _, str := range arr {
+		if str == s {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Type is the common interface for all possible types supported in protogo.
@@ -254,8 +266,9 @@ func (d *Docs) SetDocs(comments *ast.CommentGroup) {
 // Enum consists of a list of possible values.
 type Enum struct {
 	Docs
-	Name   string
-	Values []*EnumValue
+	Name       string
+	Values     []*EnumValue
+	IsStringer bool
 }
 
 // EnumValue is a possible value of an enum.
@@ -268,9 +281,10 @@ type EnumValue struct {
 // All structs
 type Struct struct {
 	Docs
-	Generate bool
-	Name     string
-	Fields   []*Field
+	Generate   bool
+	Name       string
+	Fields     []*Field
+	IsStringer bool
 }
 
 // HasField reports wether a struct has a given field name.
