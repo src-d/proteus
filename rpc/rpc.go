@@ -62,7 +62,17 @@ func (g *Generator) Generate(proto *protobuf.Package, path string) error {
 		return nil
 	}
 
-	pkg, err := g.importer.Import(path)
+	pkg, err := g.importer.ImportWithFilters(
+		path,
+		parseutil.FileFilters{
+			func(pkg, file string, typ parseutil.FileType) bool {
+				return !strings.HasSuffix(file, ".pb.go")
+			},
+			func(pkg, file string, typ parseutil.FileType) bool {
+				return !strings.HasSuffix(file, ".proteus.go")
+			},
+		},
+	)
 	if err != nil {
 		return err
 	}
