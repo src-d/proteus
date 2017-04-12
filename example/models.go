@@ -1,6 +1,9 @@
 package example
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 //go:generate proteus -p gopkg.in/src-d/proteus.v1/example -f $GOPATH/src/gopkg.in/src-d/proteus.v1/example/protos
 
@@ -95,6 +98,12 @@ type MyTime struct {
 }
 
 //proteus:generate
+type MyDuration struct {
+	Duration time.Duration
+	Name     string
+}
+
+//proteus:generate
 func RandomNumber(mean, std float64) float64 {
 	// Related documentation: https://xkcd.com/221/
 	return 4*std + mean // 4 was chosen using the XKCD RNG
@@ -121,6 +130,14 @@ func GetOmegaTime() (*MyTime, error) {
 	}
 
 	return &MyTime{Time: t, Name: "omega"}, nil
+}
+
+//proteus:generate
+func GetDurationForLength(meters int64) *MyDuration {
+	return &MyDuration{
+		Duration: time.Second * time.Duration(meters/299792458),
+		Name:     fmt.Sprintf("The light takes this duration to travel %dm", meters),
+	}
 }
 
 //proteus:generate
