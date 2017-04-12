@@ -8,6 +8,7 @@ import "google/protobuf/duration.proto";
 option go_package = "example";
 
 message Category {
+	option (gogoproto.goproto_getters) = false;
 	option (gogoproto.goproto_stringer) = false;
 	option (gogoproto.typedecl) = false;
 	int64 id = 1 [(gogoproto.customname) = "ID"];
@@ -23,24 +24,28 @@ message Category {
 // CategoryOptions is not marked for generations, but it is used in another
 // structs, so it will be generated because of it.
 message CategoryOptions {
+	option (gogoproto.goproto_getters) = false;
 	option (gogoproto.typedecl) = false;
 	bool show_prices = 1;
 	bool can_buy = 2;
 }
 
 message MyDuration {
+	option (gogoproto.goproto_getters) = false;
 	option (gogoproto.typedecl) = false;
 	google.protobuf.Duration duration = 1 [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
 	string name = 2;
 }
 
 message MyTime {
+	option (gogoproto.goproto_getters) = false;
 	option (gogoproto.typedecl) = false;
 	google.protobuf.Timestamp time = 1 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 	string name = 2;
 }
 
 message Product {
+	option (gogoproto.goproto_getters) = false;
 	option (gogoproto.typedecl) = false;
 	int64 id = 1 [(gogoproto.customname) = "ID"];
 	google.protobuf.Timestamp created_at = 2 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
