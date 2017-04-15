@@ -449,7 +449,9 @@ func toUpperSnakeCase(s string) string {
 
 func (t *Transformer) defaultOptionsForPackage(p *scanner.Package) Options {
 	return Options{
-		"go_package": NewStringValue(p.Name),
+		"go_package":                 NewStringValue(p.Name),
+		"(gogoproto.sizer_all)":      NewLiteralValue("false"),
+		"(gogoproto.protosizer_all)": NewLiteralValue("true"),
 	}
 }
 

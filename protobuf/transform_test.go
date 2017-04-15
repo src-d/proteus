@@ -716,6 +716,8 @@ func (s *TransformerSuite) TestTransform() {
 	s.Equal("gopkg.in.srcd.proteus.v1.fixtures", pkg.Name)
 	s.Equal("gopkg.in/src-d/proteus.v1/fixtures", pkg.Path)
 	s.Equal(NewStringValue("foo"), pkg.Options["go_package"])
+	s.Equal(NewLiteralValue("false"), pkg.Options["(gogoproto.sizer_all)"])
+	s.Equal(NewLiteralValue("true"), pkg.Options["(gogoproto.protosizer_all)"])
 	s.Equal([]string{
 		"github.com/gogo/protobuf/gogoproto/gogo.proto",
 		"google/protobuf/timestamp.proto",
