@@ -13,11 +13,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	"gopkg.in/src-d/proteus.v1/protobuf"
 	"gopkg.in/src-d/proteus.v1/resolver"
 	"gopkg.in/src-d/proteus.v1/scanner"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 type RPCSuite struct {
@@ -111,8 +111,8 @@ func (s *RPCSuite) TestDeclMethod() {
 			&protobuf.RPC{
 				Name:   "DoFoo",
 				Method: "DoFoo",
-				Input:  protobuf.NewNamed("", "Foo"),
-				Output: protobuf.NewNamed("", "Bar"),
+				Input:  nullable(protobuf.NewNamed("", "Foo")),
+				Output: nullable(protobuf.NewNamed("", "Bar")),
 			},
 			expectedFuncNotGenerated,
 		},
@@ -121,7 +121,7 @@ func (s *RPCSuite) TestDeclMethod() {
 			&protobuf.RPC{
 				Name:   "DoFoo",
 				Method: "DoFoo",
-				Input:  protobuf.NewNamed("", "Foo"),
+				Input:  nullable(protobuf.NewNamed("", "Foo")),
 				Output: notNullable(protobuf.NewNamed("", "Bar")),
 			},
 			expectedFuncNotGeneratedAndNotNullable,
@@ -131,8 +131,8 @@ func (s *RPCSuite) TestDeclMethod() {
 			&protobuf.RPC{
 				Name:   "DoFoo",
 				Method: "DoFoo",
-				Input:  protobuf.NewGeneratedNamed("", "FooRequest"),
-				Output: protobuf.NewGeneratedNamed("", "FooResponse"),
+				Input:  nullable(protobuf.NewGeneratedNamed("", "FooRequest")),
+				Output: nullable(protobuf.NewGeneratedNamed("", "FooResponse")),
 			},
 			expectedFuncGenerated,
 		},
@@ -141,8 +141,8 @@ func (s *RPCSuite) TestDeclMethod() {
 			&protobuf.RPC{
 				Name:       "DoFoo",
 				Method:     "DoFoo",
-				Input:      protobuf.NewGeneratedNamed("", "FooRequest"),
-				Output:     protobuf.NewGeneratedNamed("", "FooResponse"),
+				Input:      nullable(protobuf.NewGeneratedNamed("", "FooRequest")),
+				Output:     nullable(protobuf.NewGeneratedNamed("", "FooResponse")),
 				IsVariadic: true,
 			},
 			expectedFuncGeneratedVariadic,
@@ -153,8 +153,8 @@ func (s *RPCSuite) TestDeclMethod() {
 				Name:     "DoFoo",
 				Method:   "DoFoo",
 				HasError: true,
-				Input:    protobuf.NewGeneratedNamed("", "FooRequest"),
-				Output:   protobuf.NewGeneratedNamed("", "FooResponse"),
+				Input:    nullable(protobuf.NewGeneratedNamed("", "FooRequest")),
+				Output:   nullable(protobuf.NewGeneratedNamed("", "FooResponse")),
 			},
 			expectedFuncGeneratedWithError,
 		},
@@ -165,8 +165,8 @@ func (s *RPCSuite) TestDeclMethod() {
 				Method:   "DoFoo",
 				Recv:     "Fooer",
 				HasError: true,
-				Input:    protobuf.NewGeneratedNamed("", "FooRequest"),
-				Output:   protobuf.NewGeneratedNamed("", "FooResponse"),
+				Input:    nullable(protobuf.NewGeneratedNamed("", "FooRequest")),
+				Output:   nullable(protobuf.NewGeneratedNamed("", "FooResponse")),
 			},
 			expectedMethod,
 		},
@@ -177,8 +177,8 @@ func (s *RPCSuite) TestDeclMethod() {
 				Method:   "Foo",
 				Recv:     "T",
 				HasError: false,
-				Input:    protobuf.NewNamed("go.ast", "BlockStmt"),
-				Output:   protobuf.NewGeneratedNamed("", "T_FooResponse"),
+				Input:    nullable(protobuf.NewNamed("go.ast", "BlockStmt")),
+				Output:   nullable(protobuf.NewGeneratedNamed("", "T_FooResponse")),
 			},
 			expectedMethodExternalInput,
 		},
@@ -187,8 +187,8 @@ func (s *RPCSuite) TestDeclMethod() {
 			&protobuf.RPC{
 				Name:   "Empty",
 				Method: "Empty",
-				Input:  protobuf.NewGeneratedNamed("", "Empty"),
-				Output: protobuf.NewGeneratedNamed("", "Empty"),
+				Input:  nullable(protobuf.NewGeneratedNamed("", "Empty")),
+				Output: nullable(protobuf.NewGeneratedNamed("", "Empty")),
 			},
 			expectedFuncEmptyInAndOut,
 		},
@@ -198,8 +198,8 @@ func (s *RPCSuite) TestDeclMethod() {
 				Name:     "Empty",
 				Method:   "Empty",
 				HasError: true,
-				Input:    protobuf.NewGeneratedNamed("", "Empty"),
-				Output:   protobuf.NewGeneratedNamed("", "Empty"),
+				Input:    nullable(protobuf.NewGeneratedNamed("", "Empty")),
+				Output:   nullable(protobuf.NewGeneratedNamed("", "Empty")),
 			},
 			expectedFuncEmptyInAndOutWithError,
 		},
@@ -381,6 +381,13 @@ func (s *RPCSuite) fakePkg() *types.Package {
 	pkg, err := config.Check("", fs, []*ast.File{f}, nil)
 	s.Nil(err)
 	return pkg
+}
+
+func nullable(t protobuf.Type) protobuf.Type {
+	src := scanner.NewNamed("", "X")
+	src.SetNullable(true)
+	t.SetSource(src)
+	return t
 }
 
 func notNullable(t protobuf.Type) protobuf.Type {
