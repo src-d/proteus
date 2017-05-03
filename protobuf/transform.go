@@ -293,6 +293,8 @@ func (t *Transformer) needsNotNullableOption(typ scanner.Type) bool {
 		return !isNullable && !t.IsEnum(ty.Path, ty.Name)
 	case *scanner.Alias:
 		return t.needsNotNullableOption(ty.Underlying)
+	case *scanner.Map:
+		return t.needsNotNullableOption(ty.Value)
 	}
 
 	return false

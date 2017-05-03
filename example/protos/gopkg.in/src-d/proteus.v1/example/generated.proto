@@ -46,6 +46,13 @@ message MyTime {
 	string name = 2;
 }
 
+message Price {
+	option (gogoproto.goproto_getters) = false;
+	option (gogoproto.typedecl) = false;
+	string currency = 1;
+	int64 amount = 2;
+}
+
 message Product {
 	option (gogoproto.goproto_getters) = false;
 	option (gogoproto.typedecl) = false;
@@ -54,7 +61,7 @@ message Product {
 	google.protobuf.Timestamp updated_at = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 	google.protobuf.Timestamp deleted_at = 4 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
 	string name = 5;
-	double price = 6;
+	map<string, gopkg.in.srcd.proteus.v1.example.Price> price = 6 [(gogoproto.casttype) = "Prices", (gogoproto.nullable) = false];
 	repeated string tags = 7;
 	int64 category_id = 8 [(gogoproto.customname) = "CategoryID"];
 	int32 primary_category_id = 9 [(gogoproto.casttype) = "int8", (gogoproto.customname) = "PrimaryCategoryID"];
