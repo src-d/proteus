@@ -167,9 +167,10 @@ func (s *ResolverSuite) TestResolve() {
 
 	pkg := pkgs[0]
 	s.assertStruct(pkg.Structs[0], "Bar", "Bar", "Baz")
-	s.assertStruct(pkg.Structs[1], "Foo", "Bar", "Baz", "IntList", "IntArray", "Map", "Timestamp", "Duration", "Aliased")
+	s.assertStruct(pkg.Structs[1], "Foo", "Bar", "Baz", "IntList", "IntArray", "Map", "AliasedMap", "Timestamp", "Duration", "Aliased")
+	s.assertStruct(pkg.Structs[2], "Jur", "A")
 	// Qux is not opted-in, but is required by Foo, so should be here
-	s.assertStruct(pkg.Structs[2], "Qux", "A", "B")
+	s.assertStruct(pkg.Structs[3], "Qux", "A", "B")
 
 	s.Equal(0, len(pkg.Funcs), "num of funcs in pkg")
 

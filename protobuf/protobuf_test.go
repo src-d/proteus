@@ -3,6 +3,8 @@ package protobuf
 import (
 	"testing"
 
+	"gopkg.in/src-d/proteus.v1/scanner"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -51,4 +53,58 @@ func TestTypesString(t *testing.T) {
 func TestOptionsString(t *testing.T) {
 	require.Equal(t, "foo", NewLiteralValue("foo").String())
 	require.Equal(t, `"bar"`, NewStringValue("bar").String())
+}
+
+func TestIsNullable(t *testing.T) {
+	var typ Type
+	nullableSource := nullable(scanner.NewBasic("string"))
+	require.True(t, nullableSource.IsNullable(), "nullable source is nullable")
+	notNullableSource := scanner.NewNamed("foo", "Baz")
+	require.False(t, notNullableSource.IsNullable(), "not nullable source is not nullable")
+	nullableType := NewNamed("nullable", "Type")
+	nullableType.SetSource(nullableSource)
+	require.True(t, nullableType.IsNullable(), "nullable type is nullable")
+	notNullableType := NewNamed("notnullable", "Type")
+	notNullableType.SetSource(notNullableSource)
+	require.False(t, notNullableType.IsNullable(), "not nullable type is not nullable")
+
+	// Named
+	typ = NewNamed("foo", "Bar")
+	require.True(t, typ.IsNullable(), "Named without Source is nullable")
+	typ.SetSource(nullableSource)
+	require.True(t, typ.IsNullable(), "Named with nullable Source is nullable")
+	typ.SetSource(notNullableSource)
+	require.False(t, typ.IsNullable(), "Named with not nullable Source is not nullable")
+
+	// Alias
+	typ = NewAlias(nullableType, nullableType)
+	require.True(t, typ.IsNullable(), "nullable Type and nullable Underlying without Source makes alias nullable")
+	typ = NewAlias(nullableType, notNullableType)
+	require.True(t, typ.IsNullable(), "nullable Type and not nullable Underlying without Source makes alias nullable")
+	typ = NewAlias(notNullableType, nullableType)
+	require.False(t, typ.IsNullable(), "not nullable Type and nullable Underlying without Source makes alias not nullable")
+	typ = NewAlias(notNullableType, notNullableType)
+	require.False(t, typ.IsNullable(), "not nullable Type and not nullable Underlying without Source makes alias not nullable")
+
+	typ = NewAlias(nullableType, nullableType)
+	typ.SetSource(nullableSource)
+	require.True(t, typ.IsNullable(), "nullable Type and nullable Underlying with nullable Source makes alias nullable")
+	typ.SetSource(notNullableSource)
+	require.False(t, typ.IsNullable(), "nullable Type and nullable Underlying with not nullable Source makes alias not nullable")
+	typ = NewAlias(notNullableType, nullableType)
+	typ.SetSource(nullableSource)
+	require.True(t, typ.IsNullable(), "not nullable Type and nullable Underlying with nullable Source makes alias nullable")
+	typ = NewAlias(notNullableType, nullableType)
+	typ.SetSource(notNullableSource)
+	require.False(t, typ.IsNullable(), "not nullable Type and nullable Underlying with not nullable Source makes alias not nullable")
+
+	// Basic
+	typ = NewBasic("string")
+	require.False(t, typ.IsNullable(), "Basic types are never nullable")
+
+	// Map
+	typ = NewMap(notNullableType, nullableType)
+	require.True(t, typ.IsNullable(), "map<notNullable>*Nullable is nullable")
+	typ = NewMap(notNullableType, notNullableType)
+	require.False(t, typ.IsNullable(), "map<notNullable>NotNullable is not nullable")
 }

@@ -139,7 +139,7 @@ func (r *Resolver) resolveType(typ scanner.Type, info *packagesInfo) (result sca
 				)
 				return nil
 			}
-			return scanner.NewAlias(t, alias)
+			return scanner.NewAlias(t, r.resolveType(alias, info))
 		}
 
 		if info.isStruct(t.String()) {

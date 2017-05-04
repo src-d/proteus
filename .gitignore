@@ -19,9 +19,8 @@ _cgo_export.*
 
 _testmain.go
 coverage.txt
+profile.out
 
 *.exe
 *.test
 *.prof
-
-coverage.txt

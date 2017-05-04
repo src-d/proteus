@@ -12,13 +12,20 @@ type Product struct {
 	Model
 
 	Name  string
-	Price float64
+	Price Prices
 
 	Tags              Tags
 	CategoryID        int64
 	PrimaryCategoryID int8
 	// Category will not be generated because we explicitly said so.
 	Category Category `proteus:"-"`
+}
+
+type Prices map[string]Price
+
+type Price struct {
+	Currency string
+	Amount   int64
 }
 
 //proteus:generate
@@ -145,7 +152,7 @@ func GetDurationForLength(meters int64) *MyDuration {
 func GetPhone() *Product {
 	return &Product{
 		Name:       "MiPhone",
-		Price:      733.33,
+		Price:      map[string]Price{"EUR": Price{"EUR", 12300}},
 		Tags:       Tags{"cool", "mi", "phone"},
 		CategoryID: 1,
 		Category:   Category{},

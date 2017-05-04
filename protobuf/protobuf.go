@@ -201,7 +201,7 @@ func (n *Named) IsNullable() bool {
 		return src.IsNullable()
 	}
 
-	return true
+	return true // All named types in protobuf are nullable unless said otherwise.
 }
 
 // Alias represent a type declaration from one type to another.
@@ -299,7 +299,7 @@ func (m *Map) Source() scanner.Type {
 }
 
 func (m *Map) IsNullable() bool {
-	return false
+	return m.Value.IsNullable()
 }
 
 func (*Named) isType() {}

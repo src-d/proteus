@@ -413,11 +413,12 @@ func TestScanner(t *testing.T) {
 	pkg := pkgs[0]
 	subpkg := pkgs[1]
 
-	require.Equal(4, len(pkg.Structs), "pkg")
+	require.Equal(5, len(pkg.Structs), "pkg")
 	assertStruct(t, findStructByName("Bar", pkg.Structs), "Bar", true, "Bar", "Baz")
-	assertStruct(t, findStructByName("Foo", pkg.Structs), "Foo", true, "Bar", "Baz", "IntList", "IntArray", "Map", "Timestamp", "External", "Duration", "Aliased")
+	assertStruct(t, findStructByName("Foo", pkg.Structs), "Foo", true, "Bar", "Baz", "IntList", "IntArray", "Map", "AliasedMap", "Timestamp", "External", "Duration", "Aliased")
 	assertStruct(t, findStructByName("Qux", pkg.Structs), "Qux", false, "A", "B")
 	assertStruct(t, findStructByName("Saz", pkg.Structs), "Saz", true, "Point", "Foo")
+	assertStruct(t, findStructByName("Jur", pkg.Structs), "Jur", false, "A")
 
 	require.Equal(3, len(subpkg.Structs), "subpkg")
 	assertStruct(t, findStructByName("MyContainer", subpkg.Structs), "MyContainer", false)
@@ -477,13 +478,15 @@ func assertStruct(t *testing.T, s *Struct, name string, generate bool, fields ..
 		s.Name,
 		"struct name",
 	)
-	require.Equal(t, generate, s.Generate, "struct should be generated")
+	require.Equal(t, generate, s.Generate, "struct has been asked to be generated (before resolver)")
 
 	require.Equal(t, len(fields), len(s.Fields), "should have same struct fields")
 	for _, f := range fields {
 		require.True(t, s.HasField(f), "should have struct field %q", f)
 	}
-	require.Equal(t, fmt.Sprintf("%s ...", s.Name), strings.TrimSpace(strings.Join(s.Doc, "\n")))
+
+	doc := strings.TrimSpace(strings.Join(s.Doc, "\n"))
+	require.True(t, strings.HasPrefix(doc, s.Name), "Doc for %s starts with its name", s.Name)
 }
 
 func assertFunc(t *testing.T, fn *Func, name string, recv string, input []string, result []string, variadic bool) {

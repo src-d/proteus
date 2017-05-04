@@ -725,7 +725,7 @@ func (s *TransformerSuite) TestTransform() {
 		"gopkg.in/src-d/proteus.v1/fixtures/subpkg/generated.proto",
 	}, pkg.Imports)
 	s.Equal(1, len(pkg.Enums))
-	s.Equal(4, len(pkg.Messages))
+	s.Equal(5, len(pkg.Messages))
 	s.Equal(0, len(pkg.RPCs))
 
 	pkg = s.t.Transform(pkgs[1])
