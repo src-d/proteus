@@ -57,6 +57,7 @@ message Product {
 	double price = 6;
 	repeated string tags = 7;
 	int64 category_id = 8 [(gogoproto.customname) = "CategoryID"];
+	int32 primary_category_id = 9 [(gogoproto.casttype) = "int8", (gogoproto.customname) = "PrimaryCategoryID"];
 }
 
 message GetAlphaTimeRequest {

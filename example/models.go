@@ -14,8 +14,9 @@ type Product struct {
 	Name  string
 	Price float64
 
-	Tags       Tags
-	CategoryID int64
+	Tags              Tags
+	CategoryID        int64
+	PrimaryCategoryID int8
 	// Category will not be generated because we explicitly said so.
 	Category Category `proteus:"-"`
 }
