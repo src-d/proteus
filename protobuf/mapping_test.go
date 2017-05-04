@@ -20,6 +20,20 @@ func Test_timeDurationDecorator(t *testing.T) {
 	assert.Equal(t, NewLiteralValue("true"), f.Options["(gogoproto.stdduration)"])
 }
 
+func TestDefaultMappingUpgradeBasicDecoratos(t *testing.T) {
+	upgraded := []string{"uint8", "int8", "byte", "uint16", "int16", "uint", "int", "uintptr", "rune"}
+
+	for _, basic := range upgraded {
+		f := new(Field)
+		decorators := (*DefaultMappings[basic]).Decorators
+		assert.NotEmpty(t, decorators, "decorators for %s are empty", basic)
+
+		decorators.Run(&Package{}, &Message{}, f)
+
+		assert.Equal(t, NewStringValue(basic), f.Options["(gogoproto.casttype)"], "decorators is not adding the right casttype for %s", basic)
+	}
+}
+
 func TestToGoOutPath(t *testing.T) {
 	// Empty case
 	assert.Equal(t, "", TypeMappings{}.ToGoOutPath())

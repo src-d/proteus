@@ -277,7 +277,7 @@ func (s *TransformerSuite) TestTransformField() {
 			&Field{
 				Name:    "foo",
 				Type:    NewBasic("int64"),
-				Options: Options{},
+				Options: Options{"(gogoproto.casttype)": NewStringValue("int")},
 			},
 		},
 		{
@@ -296,7 +296,7 @@ func (s *TransformerSuite) TestTransformField() {
 				Name:     "baz_bar",
 				Type:     NewBasic("int64"),
 				Repeated: true,
-				Options:  Options{},
+				Options:  Options{"(gogoproto.casttype)": NewStringValue("int")},
 			},
 		},
 		{
@@ -307,6 +307,7 @@ func (s *TransformerSuite) TestTransformField() {
 				Type: NewBasic("int64"),
 				Options: Options{
 					"(gogoproto.customname)": NewStringValue("CustomID"),
+					"(gogoproto.casttype)":   NewStringValue("int"),
 				},
 			},
 		},

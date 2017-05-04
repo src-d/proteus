@@ -68,6 +68,18 @@ func (ds Decorators) Run(p *Package, m *Message, f *Field) {
 	}
 }
 
+func CastToBasicType(basic string) Decorators {
+	return NewDecorators(
+		func(p *Package, m *Message, f *Field) {
+			if f.Options == nil {
+				f.Options = make(Options)
+			}
+
+			f.Options["(gogoproto.casttype)"] = NewStringValue(basic)
+		},
+	)
+}
+
 // TypeMappings is a mapping between Go types and protobuf types.
 // The names of the Go types can have packages. For example: "time.Time" is a
 // valid name. "foo.bar/baz.Qux" is a valid type name as well.
@@ -83,42 +95,57 @@ var DefaultMappings = TypeMappings{
 	"bool":    &ProtoType{Name: "bool", Basic: true},
 	"string":  &ProtoType{Name: "string", Basic: true},
 	"uint8": &ProtoType{
-		Name:  "uint32",
-		Basic: true,
-		Warn:  "type %s was upgraded to uint32",
+		Name:       "uint32",
+		Basic:      true,
+		Warn:       "type %s was upgraded to uint32",
+		Decorators: CastToBasicType("uint8"),
 	},
 	"int8": &ProtoType{
-		Name:  "int32",
-		Basic: true,
-		Warn:  "type %s was upgraded to int32",
+		Name:       "int32",
+		Basic:      true,
+		Warn:       "type %s was upgraded to int32",
+		Decorators: CastToBasicType("int8"),
 	},
 	"byte": &ProtoType{
-		Name:  "uint32",
-		Basic: true,
-		Warn:  "type %s was upgraded to uint32",
+		Name:       "uint32",
+		Basic:      true,
+		Warn:       "type %s was upgraded to uint32",
+		Decorators: CastToBasicType("byte"),
 	},
 	"uint16": &ProtoType{
-		Name:  "uint32",
-		Basic: true,
-		Warn:  "type %s was upgraded to uint32",
+		Name:       "uint32",
+		Basic:      true,
+		Warn:       "type %s was upgraded to uint32",
+		Decorators: CastToBasicType("uint16"),
 	},
 	"int16": &ProtoType{
-		Name:  "int32",
-		Basic: true,
-		Warn:  "type %s was upgraded to int32",
+		Name:       "int32",
+		Basic:      true,
+		Warn:       "type %s was upgraded to int32",
+		Decorators: CastToBasicType("int16"),
 	},
 	"int": &ProtoType{
-		Name:  "int64",
-		Basic: true,
-		Warn:  "type %s was upgraded to int64",
+		Name:       "int64",
+		Basic:      true,
+		Warn:       "type %s was upgraded to int64",
+		Decorators: CastToBasicType("int"),
 	},
 	"uint": &ProtoType{
-		Name:  "uint64",
-		Basic: true,
-		Warn:  "type %s was upgraded to uint64",
+		Name:       "uint64",
+		Basic:      true,
+		Warn:       "type %s was upgraded to uint64",
+		Decorators: CastToBasicType("uint"),
 	},
-	"uintptr": &ProtoType{Name: "uint64", Basic: true},
-	"rune":    &ProtoType{Name: "int32", Basic: true},
+	"uintptr": &ProtoType{
+		Name:       "uint64",
+		Basic:      true,
+		Decorators: CastToBasicType("uintptr"),
+	},
+	"rune": &ProtoType{
+		Name:       "int32",
+		Basic:      true,
+		Decorators: CastToBasicType("rune"),
+	},
 	"time.Time": &ProtoType{
 		Name:     "Timestamp",
 		Package:  "google.protobuf",
