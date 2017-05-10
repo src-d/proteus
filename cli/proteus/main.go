@@ -144,14 +144,18 @@ func genAll(c *cli.Context) error {
 }
 
 func protocExec(protocPath, pck, outPath, protoFile string) error {
+	protocArgs := fmt.Sprintf(
+		"--proto_path=%s:%s:%s:.",
+		goSrc,
+		filepath.Join(protobufSrc, "protobuf"),
+		filepath.Join(path, pck),
+	)
+
+	report.Info("executing protoc: %s %s", protocPath, protocArgs)
+
 	cmd := exec.Command(
 		protocPath,
-		fmt.Sprintf(
-			"--proto_path=%s:%s:%s:.",
-			goSrc,
-			filepath.Join(protobufSrc, "protobuf"),
-			filepath.Join(path, pck),
-		),
+		protocArgs,
 		genAllGoFastOutOption(outPath),
 		protoFile,
 	)
