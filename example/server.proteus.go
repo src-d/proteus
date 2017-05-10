@@ -2,6 +2,7 @@ package example
 
 import (
 	"golang.org/x/net/context"
+	"gopkg.in/src-d/proteus.v1/example/categories"
 )
 
 type exampleServiceServer struct {
@@ -29,6 +30,12 @@ func (s *exampleServiceServer) GetOmegaTime(ctx context.Context, in *GetOmegaTim
 func (s *exampleServiceServer) GetPhone(ctx context.Context, in *GetPhoneRequest) (result *Product, err error) {
 	result = new(Product)
 	result = GetPhone()
+	return
+}
+func (s *exampleServiceServer) RandomCategory(ctx context.Context, in *RandomCategoryRequest) (result *categories.CategoryOptions, err error) {
+	result = new(categories.CategoryOptions)
+	aux := RandomCategory()
+	result = &aux
 	return
 }
 func (s *exampleServiceServer) RandomNumber(ctx context.Context, in *RandomNumberRequest) (result *RandomNumberResponse, err error) {

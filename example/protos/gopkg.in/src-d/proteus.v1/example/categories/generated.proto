@@ -1,0 +1,18 @@
+syntax = "proto3";
+package gopkg.in.srcd.proteus.v1.example.categories;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.protosizer_all) = true;
+option (gogoproto.sizer_all) = false;
+option go_package = "categories";
+
+// CategoryOptions is not marked for generations, but it is used in another
+// structs, so it will be generated because of it.
+message CategoryOptions {
+	option (gogoproto.goproto_getters) = false;
+	option (gogoproto.typedecl) = false;
+	bool show_prices = 1;
+	bool can_buy = 2;
+}
+
