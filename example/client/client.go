@@ -2,6 +2,7 @@ package client
 
 import (
 	"gopkg.in/src-d/proteus.v1/example"
+	"gopkg.in/src-d/proteus.v1/example/categories"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -35,7 +36,7 @@ func (c *Client) RequestOmegaTime() (*example.MyTime, error) {
 	return c.GetOmegaTime(context.Background(), &example.GetOmegaTimeRequest{})
 }
 
-func (c *Client) RequestRandomCategory() (*example.CategoryOptions, error) {
+func (c *Client) RequestRandomCategory() (*categories.CategoryOptions, error) {
 	return c.RandomCategory(context.Background(), &example.RandomCategoryRequest{})
 }
 
