@@ -3,6 +3,7 @@ package gopkg.in.srcd.proteus.v1.example;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
+import "gopkg.in/src-d/proteus.v1/example/categories/generated.proto";
 import "google/protobuf/duration.proto";
 
 option (gogoproto.protosizer_all) = true;
@@ -20,16 +21,7 @@ message Category {
 	string name = 5;
 	gopkg.in.srcd.proteus.v1.example.Type type = 6;
 	string color = 7 [(gogoproto.casttype) = "Color"];
-	gopkg.in.srcd.proteus.v1.example.CategoryOptions options = 8 [(gogoproto.nullable) = false];
-}
-
-// CategoryOptions is not marked for generations, but it is used in another
-// structs, so it will be generated because of it.
-message CategoryOptions {
-	option (gogoproto.goproto_getters) = false;
-	option (gogoproto.typedecl) = false;
-	bool show_prices = 1;
-	bool can_buy = 2;
+	gopkg.in.srcd.proteus.v1.example.categories.CategoryOptions options = 8 [(gogoproto.nullable) = false];
 }
 
 message MyDuration {
@@ -107,7 +99,7 @@ service ExampleService {
 	rpc GetDurationForLength (gopkg.in.srcd.proteus.v1.example.GetDurationForLengthRequest) returns (gopkg.in.srcd.proteus.v1.example.MyDuration);
 	rpc GetOmegaTime (gopkg.in.srcd.proteus.v1.example.GetOmegaTimeRequest) returns (gopkg.in.srcd.proteus.v1.example.MyTime);
 	rpc GetPhone (gopkg.in.srcd.proteus.v1.example.GetPhoneRequest) returns (gopkg.in.srcd.proteus.v1.example.Product);
-	rpc RandomCategory (gopkg.in.srcd.proteus.v1.example.RandomCategoryRequest) returns (gopkg.in.srcd.proteus.v1.example.CategoryOptions);
+	rpc RandomCategory (gopkg.in.srcd.proteus.v1.example.RandomCategoryRequest) returns (gopkg.in.srcd.proteus.v1.example.categories.CategoryOptions);
 	rpc RandomNumber (gopkg.in.srcd.proteus.v1.example.RandomNumberRequest) returns (gopkg.in.srcd.proteus.v1.example.RandomNumberResponse);
 }
 

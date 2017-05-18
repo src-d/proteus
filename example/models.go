@@ -3,6 +3,8 @@ package example
 import (
 	"fmt"
 	"time"
+
+	"gopkg.in/src-d/proteus.v1/example/categories"
 )
 
 //go:generate proteus -p gopkg.in/src-d/proteus.v1/example -f $GOPATH/src/gopkg.in/src-d/proteus.v1/example/protos
@@ -35,7 +37,7 @@ type Category struct {
 	Name    string
 	Type    Type
 	Color   Color
-	Options CategoryOptions
+	Options categories.CategoryOptions
 }
 
 func (c *Category) String() string {
@@ -76,13 +78,6 @@ const (
 	Yellow Color = "yellow"
 )
 
-// CategoryOptions is not marked for generations, but it is used in another
-// structs, so it will be generated because of it.
-type CategoryOptions struct {
-	ShowPrices bool
-	CanBuy     bool
-}
-
 // Model is not marked for generation, so it won't be generated.
 type Model struct {
 	ID        int64
@@ -118,8 +113,8 @@ func RandomNumber(mean, std float64) float64 {
 }
 
 //proteus:generate
-func RandomCategory() CategoryOptions {
-	return CategoryOptions{
+func RandomCategory() categories.CategoryOptions {
+	return categories.CategoryOptions{
 		ShowPrices: RandomBool(),
 		CanBuy:     RandomBool(),
 	}

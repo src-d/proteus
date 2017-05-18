@@ -143,12 +143,13 @@ func genAll(c *cli.Context) error {
 	return genRPCServer(c)
 }
 
-func protocExec(protocPath, pck, outPath, protoFile string) error {
+func protocExec(protocPath, pkg, outPath, protoFile string) error {
 	protocArgs := fmt.Sprintf(
-		"--proto_path=%s:%s:%s:.",
+		"--proto_path=%s:%s:%s:%s:.",
 		goSrc,
+		path,
 		filepath.Join(protobufSrc, "protobuf"),
-		filepath.Join(path, pck),
+		filepath.Join(path, pkg),
 	)
 
 	report.Info("executing protoc: %s %s", protocPath, protocArgs)
