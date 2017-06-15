@@ -158,7 +158,7 @@ func (g *Generator) genMethodType(ctx *context, rpc *protobuf.RPC) *ast.FuncType
 
 	return &ast.FuncType{
 		Params: fields(
-			field("ctx", ast.NewIdent("context.Context")),
+			field("ctx", ast.NewIdent("xcontext.Context")),
 			field("in", ptr(ast.NewIdent(in))),
 		),
 		Results: fields(
@@ -174,6 +174,9 @@ func (g *Generator) genMethodCall(ctx *context, rpc *protobuf.RPC) ast.Expr {
 		call.Fun = ast.NewIdent(fmt.Sprintf("s.%s.%s", rpc.Recv, rpc.Method))
 	}
 
+	if rpc.HasCtx {
+		call.Args = append(call.Args, ast.NewIdent("ctx"))
+	}
 	if rpc.IsVariadic {
 		call.Ellipsis = token.Pos(1)
 	}
@@ -329,7 +332,7 @@ func (g *Generator) buildFile(ctx *context, decls []ast.Decl) *ast.File {
 		Name: ast.NewIdent(ctx.pkg.Name()),
 	}
 
-	var specs = []ast.Spec{newImport("golang.org/x/net/context")}
+	var specs = []ast.Spec{newNamedImport("xcontext", "golang.org/x/net/context")}
 	for _, i := range ctx.imports {
 		specs = append(specs, newImport(i))
 	}
@@ -373,6 +376,16 @@ func isGenerated(t protobuf.Type) bool {
 
 func newImport(path string) *ast.ImportSpec {
 	return &ast.ImportSpec{
+		Path: &ast.BasicLit{
+			Kind:  token.STRING,
+			Value: fmt.Sprintf(`"%s"`, removeGoPath(path)),
+		},
+	}
+}
+
+func newNamedImport(name, path string) *ast.ImportSpec {
+	return &ast.ImportSpec{
+		Name: &ast.Ident{Name: name},
 		Path: &ast.BasicLit{
 			Kind:  token.STRING,
 			Value: fmt.Sprintf(`"%s"`, removeGoPath(path)),

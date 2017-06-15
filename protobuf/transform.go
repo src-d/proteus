@@ -110,15 +110,17 @@ func (t *Transformer) transformFunc(pkg *Package, f *scanner.Func, names nameSet
 		receiverName = n.Name
 	}
 
+	input, hasCtx := removeFirstCtx(f.Input)
 	output, hasError := removeLastError(f.Output)
 	rpc := &RPC{
 		Docs:       f.Doc,
 		Name:       name,
 		Recv:       receiverName,
 		Method:     f.Name,
+		HasCtx:     hasCtx,
 		HasError:   hasError,
 		IsVariadic: f.IsVariadic,
-		Input:      t.transformInputTypes(pkg, f.Input, names, name),
+		Input:      t.transformInputTypes(pkg, input, names, name),
 		Output:     t.transformOutputTypes(pkg, output, names, name),
 	}
 	if rpc.Input == nil || rpc.Output == nil {
@@ -383,6 +385,17 @@ func (t *Transformer) findMapping(name string) *ProtoType {
 	return typ
 }
 
+func removeFirstCtx(types []scanner.Type) ([]scanner.Type, bool) {
+	if len(types) > 0 {
+		first := types[0]
+		if isCtx(first) {
+			return types[1:], true
+		}
+	}
+
+	return types, false
+}
+
 func removeLastError(types []scanner.Type) ([]scanner.Type, bool) {
 	if len(types) > 0 {
 		ln := len(types)
@@ -398,6 +411,13 @@ func removeLastError(types []scanner.Type) ([]scanner.Type, bool) {
 func isNamed(typ scanner.Type) bool {
 	_, ok := typ.(*scanner.Named)
 	return ok
+}
+
+func isCtx(typ scanner.Type) bool {
+	if ctx, ok := typ.(*scanner.Named); ok {
+		return ctx.Path == "context" && ctx.Name == "Context"
+	}
+	return false
 }
 
 func isError(typ scanner.Type) bool {

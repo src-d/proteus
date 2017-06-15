@@ -48,7 +48,11 @@ func (c *context) findSignature(rpc *protobuf.RPC) *types.Signature {
 
 func (c *context) argumentType(rpc *protobuf.RPC) string {
 	signature := c.findSignature(rpc)
-	obj := firstTypeName(signature.Params())
+	skip := 0
+	if rpc.HasCtx {
+		skip++
+	}
+	obj := firstTypeName(skip, signature.Params())
 	c.addImport(obj.Pkg().Path())
 
 	return c.objectNameInContext(obj)
@@ -56,7 +60,7 @@ func (c *context) argumentType(rpc *protobuf.RPC) string {
 
 func (c *context) returnType(rpc *protobuf.RPC) string {
 	signature := c.findSignature(rpc)
-	obj := firstTypeName(signature.Results())
+	obj := firstTypeName(0, signature.Results())
 	c.addImport(obj.Pkg().Path())
 
 	return c.objectNameInContext(obj)
@@ -72,8 +76,8 @@ func (c *context) objectNameInContext(obj types.Object) string {
 	}
 }
 
-func firstTypeName(tuple *types.Tuple) types.Object {
-	t := tuple.At(0).Type()
+func firstTypeName(skip int, tuple *types.Tuple) types.Object {
+	t := tuple.At(skip).Type()
 	if inner, ok := t.(*types.Pointer); ok {
 		t = inner.Elem()
 	}

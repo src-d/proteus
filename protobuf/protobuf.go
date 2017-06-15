@@ -331,6 +331,8 @@ type RPC struct {
 	Recv string
 	// Method is the name of the Go method or function.
 	Method string
+	// HasCtx reports whether the Go function accepts context.
+	HasCtx bool
 	// HasError reports whether the Go function returns an error.
 	HasError bool
 	// IsVariadic reports whether the Go function is variadic or not.
