@@ -60,6 +60,12 @@ const expectedFuncNotGeneratedAndNotNullable = `func (s *FooServer) DoFoo(ctx co
 	return
 }`
 
+const expectedFuncNotGeneratedAndNotNullableIn = `func (s *FooServer) DoFoo(ctx context.Context, in *Foo) (result *Bar, err error) {
+	result = new(Bar)
+	result = DoFoo(*in)
+	return
+}`
+
 const expectedFuncGenerated = `func (s *FooServer) DoFoo(ctx context.Context, in *FooRequest) (result *FooResponse, err error) {
 	result = new(FooResponse)
 	result.Result1, result.Result2, result.Result3 = DoFoo(in.Arg1, in.Arg2, in.Arg3)
@@ -125,6 +131,16 @@ func (s *RPCSuite) TestDeclMethod() {
 				Output: notNullable(protobuf.NewNamed("", "Bar")),
 			},
 			expectedFuncNotGeneratedAndNotNullable,
+		},
+		{
+			"func output not generated and not nullable input",
+			&protobuf.RPC{
+				Name:   "DoFoo",
+				Method: "DoFoo",
+				Input:  notNullable(protobuf.NewNamed("", "Foo")),
+				Output: nullable(protobuf.NewNamed("", "Bar")),
+			},
+			expectedFuncNotGeneratedAndNotNullableIn,
 		},
 		{
 			"func generated",

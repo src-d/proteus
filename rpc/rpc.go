@@ -179,7 +179,13 @@ func (g *Generator) genMethodCall(ctx *context, rpc *protobuf.RPC) ast.Expr {
 	}
 
 	if !isGenerated(rpc.Input) {
-		call.Args = append(call.Args, ast.NewIdent("in"))
+		var in ast.Expr = ast.NewIdent("in")
+		if !rpc.Input.IsNullable() {
+			in = &ast.StarExpr{
+				X: in,
+			}
+		}
+		call.Args = append(call.Args, in)
 	} else {
 		msg := ctx.findMessage(typeName(rpc.Input))
 		for i := range msg.Fields {
