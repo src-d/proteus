@@ -66,6 +66,10 @@ message GetDurationForLengthRequest {
 	int64 arg1 = 1;
 }
 
+message GetDurationForLengthCtxRequest {
+	int64 arg1 = 1;
+}
+
 message GetOmegaTimeRequest {
 }
 
@@ -97,6 +101,7 @@ enum Type {
 service ExampleService {
 	rpc GetAlphaTime (gopkg.in.srcd.proteus.v1.example.GetAlphaTimeRequest) returns (gopkg.in.srcd.proteus.v1.example.MyTime);
 	rpc GetDurationForLength (gopkg.in.srcd.proteus.v1.example.GetDurationForLengthRequest) returns (gopkg.in.srcd.proteus.v1.example.MyDuration);
+	rpc GetDurationForLengthCtx (gopkg.in.srcd.proteus.v1.example.GetDurationForLengthCtxRequest) returns (gopkg.in.srcd.proteus.v1.example.MyDuration);
 	rpc GetOmegaTime (gopkg.in.srcd.proteus.v1.example.GetOmegaTimeRequest) returns (gopkg.in.srcd.proteus.v1.example.MyTime);
 	rpc GetPhone (gopkg.in.srcd.proteus.v1.example.GetPhoneRequest) returns (gopkg.in.srcd.proteus.v1.example.Product);
 	rpc RandomCategory (gopkg.in.srcd.proteus.v1.example.RandomCategoryRequest) returns (gopkg.in.srcd.proteus.v1.example.categories.CategoryOptions);
