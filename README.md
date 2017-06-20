@@ -26,7 +26,7 @@ go get -v gopkg.in/src-d/proteus.v1/...
 There are two requirements for the full process.
 
 * [`protoc`](https://github.com/google/protobuf) binary installed on your path
-* `go get github.com/gogo/protobuf/...`
+* `go get -u github.com/gogo/protobuf/...`
 
 ### Usage
 
@@ -279,7 +279,7 @@ In the future, this will be extensible via plugins.
 
 ### Examples
 
-You can find an example of a *real* use case on the [example](xample) folder.
+You can find an example of a *real* use case on the [example](example) folder.
 For checking how the server and client works, see
 [server.go](example/server/server.go) and
 [client.go](example/client/client.go). The orchestration of server and client
