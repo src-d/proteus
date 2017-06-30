@@ -24,9 +24,10 @@ type Resolver struct {
 func New() *Resolver {
 	return &Resolver{
 		customTypes: map[string]struct{}{
-			"time.Time":     {},
-			"time.Duration": {},
-			"error":         {},
+			"time.Time":       {},
+			"time.Duration":   {},
+			"context.Context": {},
+			"error":           {},
 		},
 	}
 }

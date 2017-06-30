@@ -1,6 +1,7 @@
 package example
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -141,6 +142,19 @@ func GetDurationForLength(meters int64) *MyDuration {
 		Duration: time.Second * time.Duration(meters/299792458),
 		Name:     fmt.Sprintf("The light takes this duration to travel %dm", meters),
 	}
+}
+
+//proteus:generate
+func GetDurationForLengthCtx(ctx context.Context, meters int64) (*MyDuration, error) {
+	select {
+	case <-ctx.Done(): // timeout
+		return nil, ctx.Err()
+	case <-time.After(time.Second): // it's a complex computation that takes time, right?
+	}
+	return &MyDuration{
+		Duration: time.Second * time.Duration(meters/299792458),
+		Name:     fmt.Sprintf("The light takes this duration to travel %dm", meters),
+	}, nil
 }
 
 //proteus:generate

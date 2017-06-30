@@ -47,61 +47,67 @@ func (s *RPCSuite) TestDeclConstructor() {
 	s.Equal(expectedConstructor, output)
 }
 
-const expectedFuncNotGenerated = `func (s *FooServer) DoFoo(ctx context.Context, in *Foo) (result *Bar, err error) {
+const expectedFuncNotGenerated = `func (s *FooServer) DoFoo(ctx xcontext.Context, in *Foo) (result *Bar, err error) {
 	result = new(Bar)
 	result = DoFoo(in)
 	return
 }`
 
-const expectedFuncNotGeneratedAndNotNullable = `func (s *FooServer) DoFoo(ctx context.Context, in *Foo) (result *Bar, err error) {
+const expectedFuncNotGeneratedCtx = `func (s *FooServer) DoFooCtx(ctx xcontext.Context, in *Foo) (result *Bar, err error) {
+	result = new(Bar)
+	result = DoFooCtx(ctx, in)
+	return
+}`
+
+const expectedFuncNotGeneratedAndNotNullable = `func (s *FooServer) DoFoo(ctx xcontext.Context, in *Foo) (result *Bar, err error) {
 	result = new(Bar)
 	aux := DoFoo(in)
 	result = &aux
 	return
 }`
 
-const expectedFuncNotGeneratedAndNotNullableIn = `func (s *FooServer) DoFoo(ctx context.Context, in *Foo) (result *Bar, err error) {
+const expectedFuncNotGeneratedAndNotNullableIn = `func (s *FooServer) DoFoo(ctx xcontext.Context, in *Foo) (result *Bar, err error) {
 	result = new(Bar)
 	result = DoFoo(*in)
 	return
 }`
 
-const expectedFuncGenerated = `func (s *FooServer) DoFoo(ctx context.Context, in *FooRequest) (result *FooResponse, err error) {
+const expectedFuncGenerated = `func (s *FooServer) DoFoo(ctx xcontext.Context, in *FooRequest) (result *FooResponse, err error) {
 	result = new(FooResponse)
 	result.Result1, result.Result2, result.Result3 = DoFoo(in.Arg1, in.Arg2, in.Arg3)
 	return
 }`
 
-const expectedFuncGeneratedVariadic = `func (s *FooServer) DoFoo(ctx context.Context, in *FooRequest) (result *FooResponse, err error) {
+const expectedFuncGeneratedVariadic = `func (s *FooServer) DoFoo(ctx xcontext.Context, in *FooRequest) (result *FooResponse, err error) {
 	result = new(FooResponse)
 	result.Result1, result.Result2, result.Result3 = DoFoo(in.Arg1, in.Arg2, in.Arg3...)
 	return
 }`
 
-const expectedFuncGeneratedWithError = `func (s *FooServer) DoFoo(ctx context.Context, in *FooRequest) (result *FooResponse, err error) {
+const expectedFuncGeneratedWithError = `func (s *FooServer) DoFoo(ctx xcontext.Context, in *FooRequest) (result *FooResponse, err error) {
 	result = new(FooResponse)
 	result.Result1, result.Result2, result.Result3, err = DoFoo(in.Arg1, in.Arg2, in.Arg3)
 	return
 }`
 
-const expectedMethod = `func (s *FooServer) Fooer_DoFoo(ctx context.Context, in *FooRequest) (result *FooResponse, err error) {
+const expectedMethod = `func (s *FooServer) Fooer_DoFoo(ctx xcontext.Context, in *FooRequest) (result *FooResponse, err error) {
 	result = new(FooResponse)
 	result.Result1, result.Result2, result.Result3, err = s.Fooer.DoFoo(in.Arg1, in.Arg2, in.Arg3)
 	return
 }`
 
-const expectedMethodExternalInput = `func (s *FooServer) T_Foo(ctx context.Context, in *ast.BlockStmt) (result *T_FooResponse, err error) {
+const expectedMethodExternalInput = `func (s *FooServer) T_Foo(ctx xcontext.Context, in *ast.BlockStmt) (result *T_FooResponse, err error) {
 	result = new(T_FooResponse)
 	_ = s.T.Foo(in)
 	return
 }`
 
-const expectedFuncEmptyInAndOut = `func (s *FooServer) Empty(ctx context.Context, in *Empty) (result *Empty, err error) {
+const expectedFuncEmptyInAndOut = `func (s *FooServer) Empty(ctx xcontext.Context, in *Empty) (result *Empty, err error) {
 	Empty()
 	return
 }`
 
-const expectedFuncEmptyInAndOutWithError = `func (s *FooServer) Empty(ctx context.Context, in *Empty) (result *Empty, err error) {
+const expectedFuncEmptyInAndOutWithError = `func (s *FooServer) Empty(ctx xcontext.Context, in *Empty) (result *Empty, err error) {
 	err = Empty()
 	return
 }`
@@ -121,6 +127,17 @@ func (s *RPCSuite) TestDeclMethod() {
 				Output: nullable(protobuf.NewNamed("", "Bar")),
 			},
 			expectedFuncNotGenerated,
+		},
+		{
+			"func not generated with ctx",
+			&protobuf.RPC{
+				Name:   "DoFooCtx",
+				Method: "DoFooCtx",
+				HasCtx: true,
+				Input:  nullable(protobuf.NewNamed("", "Foo")),
+				Output: nullable(protobuf.NewNamed("", "Bar")),
+			},
+			expectedFuncNotGeneratedCtx,
 		},
 		{
 			"func output not generated and not nullable",
@@ -295,7 +312,7 @@ func (s *RPCSuite) TestDeclMethod() {
 const expectedGeneratedFile = `package subpkg
 
 import (
-	"golang.org/x/net/context"
+	xcontext "golang.org/x/net/context"
 )
 
 type subpkgServiceServer struct {
@@ -304,22 +321,22 @@ type subpkgServiceServer struct {
 func NewSubpkgServiceServer() *subpkgServiceServer {
 	return &subpkgServiceServer{}
 }
-func (s *subpkgServiceServer) Generated(ctx context.Context, in *GeneratedRequest) (result *GeneratedResponse, err error) {
+func (s *subpkgServiceServer) Generated(ctx xcontext.Context, in *GeneratedRequest) (result *GeneratedResponse, err error) {
 	result = new(GeneratedResponse)
 	result.Result1, err = Generated(in.Arg1)
 	return
 }
-func (s *subpkgServiceServer) MyContainer_Name(ctx context.Context, in *MyContainer_NameRequest) (result *MyContainer_NameResponse, err error) {
+func (s *subpkgServiceServer) MyContainer_Name(ctx xcontext.Context, in *MyContainer_NameRequest) (result *MyContainer_NameResponse, err error) {
 	result = new(MyContainer_NameResponse)
 	result.Result1 = s.MyContainer.Name()
 	return
 }
-func (s *subpkgServiceServer) Point_GeneratedMethod(ctx context.Context, in *Point_GeneratedMethodRequest) (result *Point, err error) {
+func (s *subpkgServiceServer) Point_GeneratedMethod(ctx xcontext.Context, in *Point_GeneratedMethodRequest) (result *Point, err error) {
 	result = new(Point)
 	result = s.Point.GeneratedMethod(in.Arg1)
 	return
 }
-func (s *subpkgServiceServer) Point_GeneratedMethodOnPointer(ctx context.Context, in *Point_GeneratedMethodOnPointerRequest) (result *Point, err error) {
+func (s *subpkgServiceServer) Point_GeneratedMethodOnPointer(ctx xcontext.Context, in *Point_GeneratedMethodOnPointerRequest) (result *Point, err error) {
 	result = new(Point)
 	result = s.Point.GeneratedMethodOnPointer(in.Arg1)
 	return
@@ -362,11 +379,16 @@ func TestConstructorName(t *testing.T) {
 const testPkg = `package fake
 
 import "go/ast"
+import "context"
 
 type Foo struct{}
 type Bar struct {}
 
 func DoFoo(in *Foo) *Bar {
+	return nil
+}
+
+func DoFooCtx(ctx context.Context, in *Foo) *Bar {
 	return nil
 }
 
