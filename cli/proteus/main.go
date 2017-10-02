@@ -64,7 +64,10 @@ func main() {
 	}
 	app.Action = initCmd(genAll)
 
-	app.Run(os.Args)
+	if err := app.Run(os.Args); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 
 type action func(c *cli.Context) error
