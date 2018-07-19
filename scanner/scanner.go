@@ -243,6 +243,10 @@ func scanType(typ types.Type) (t Type) {
 	case *types.Map:
 		key := scanType(u.Key())
 		val := scanType(u.Elem())
+		if val == nil {
+			report.Warn("ignoring map with value type %s", typ.String())
+			return nil
+		}
 		t = NewMap(key, val)
 	default:
 		report.Warn("ignoring type %s", typ.String())

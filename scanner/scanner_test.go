@@ -93,6 +93,11 @@ func TestScanType(t *testing.T) {
 			types.NewInterface(nil, nil),
 			nil,
 		},
+		{
+			"map interface",
+			types.NewMap(types.Typ[types.String], &types.Interface{}),
+			nil,
+		},
 	}
 
 	for _, c := range cases {
