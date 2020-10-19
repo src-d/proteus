@@ -2,6 +2,8 @@
 
 [![GoDoc](https://godoc.org/github.com/src-d/proteus?status.svg)](https://godoc.org/github.com/src-d/proteus) [![Build Status](https://travis-ci.org/src-d/proteus.svg?branch=master)](https://travis-ci.org/src-d/proteus) [![codecov](https://codecov.io/gh/src-d/proteus/branch/master/graph/badge.svg)](https://codecov.io/gh/src-d/proteus) [![License](http://img.shields.io/:license-mit-blue.svg)](http://doge.mit-license.org) [![Go Report Card](https://goreportcard.com/badge/github.com/src-d/proteus)](https://goreportcard.com/report/github.com/src-d/proteus) [![codebeat badge](https://codebeat.co/badges/976ff535-c79b-429d-b35c-888a048a3201)](https://codebeat.co/projects/github-com-src-d-proteus)
 
+**Notice: This repository is abandoned, and no further updates will be done on the code base, nor issues/PRs will be answered or attended.**
+
 [Proteus](https://en.wikipedia.org/wiki/Proteus) /proʊtiəs/ is a tool to generate protocol buffers version 3 compatible `.proto` files from your Go structs, types and functions.
 
 The motivation behind this library is to use Go as a source of truth for your models instead of the other way around and then generating Go code from a `.proto` file, which does not generate idiomatic code.
